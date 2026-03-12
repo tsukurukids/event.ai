@@ -1,0 +1,746 @@
+/* =============================================
+   🌸 日本風 かわいいデザインシステム
+   Japanese-style Cute Design System
+   ============================================= */
+
+/* --- CSS Variables --- */
+:root {
+  /* パステルカラーパレット */
+  --sakura: #FFB7C5;
+  --sakura-light: #FFD9E1;
+  --sakura-deep: #E8879C;
+  --lavender: #C8A2E8;
+  --lavender-light: #E8D5F5;
+  --sky-blue: #A8D8F0;
+  --sky-deep: #6CB4DA;
+  --mint: #A8E6CF;
+  --mint-light: #D4F5E4;
+  --peach: #FFD5B5;
+  --cream: #FFF8F0;
+  --vanilla: #FFFEF5;
+  --cotton-candy: #F5E6FF;
+
+  /* テキストカラー */
+  --text-dark: #3D2C3E;
+  --text-mid: #6B5A6D;
+  --text-light: #9B8A9D;
+  --text-white: #FFFFFF;
+
+  /* グラデーション */
+  --gradient-main: linear-gradient(135deg, #FFB7C5 0%, #C8A2E8 30%, #A8D8F0 60%, #A8E6CF 100%);
+  --gradient-sunset: linear-gradient(135deg, #FFB7C5 0%, #FFD5B5 50%, #FFF3A3 100%);
+  --gradient-candy: linear-gradient(135deg, #FFB7C5 0%, #C8A2E8 100%);
+  --gradient-ocean: linear-gradient(135deg, #A8D8F0 0%, #6CB4DA 100%);
+  --gradient-card: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(255,248,240,0.9) 100%);
+  --gradient-card-hover: linear-gradient(145deg, #FFFFFF 0%, #FFF0F5 100%);
+
+  /* Glass effect */
+  --glass-bg: rgba(255, 255, 255, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-shadow: 0 8px 32px rgba(200, 162, 232, 0.12);
+
+  /* ソフトシャドウ */
+  --shadow-sm: 0 2px 8px rgba(200, 162, 232, 0.1);
+  --shadow-md: 0 4px 20px rgba(200, 162, 232, 0.15);
+  --shadow-lg: 0 8px 40px rgba(200, 162, 232, 0.18);
+  --shadow-xl: 0 16px 60px rgba(200, 162, 232, 0.22);
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+
+  /* Border Radius */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 50%;
+  --radius-pill: 100px;
+
+  /* Transitions */
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* --- Reset & Base --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'M PLUS Rounded 1c', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
+  color: var(--text-dark);
+  background: var(--gradient-main);
+  background-attachment: fixed;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* --- ふわふわ背景パーティクル --- */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: 
+    radial-gradient(circle 300px at 10% 20%, rgba(255,183,197,0.3) 0%, transparent 60%),
+    radial-gradient(circle 250px at 80% 60%, rgba(168,216,240,0.3) 0%, transparent 60%),
+    radial-gradient(circle 200px at 50% 80%, rgba(168,230,207,0.3) 0%, transparent 60%),
+    radial-gradient(circle 280px at 90% 10%, rgba(200,162,232,0.25) 0%, transparent 60%);
+  z-index: 0;
+  pointer-events: none;
+  animation: bgShift 20s ease-in-out infinite alternate;
+}
+
+@keyframes bgShift {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+/* --- Wave Background --- */
+.wave-bg {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 35vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.wave-bg svg {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wave-bg-2 {
+  animation: waveFloat 8s ease-in-out infinite;
+}
+
+@keyframes waveFloat {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-20px); }
+}
+
+/* --- App Container --- */
+#app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  padding: var(--space-xl);
+  max-width: 1100px;
+  margin: 0 auto;
+  opacity: 1;
+  transition: opacity var(--transition-normal);
+}
+
+#app.page-transition {
+  opacity: 0;
+}
+
+/* --- Typography --- */
+h1 {
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: var(--text-dark);
+  text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+  margin-bottom: var(--space-sm);
+  letter-spacing: 0.02em;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: var(--space-lg);
+}
+
+/* --- Header --- */
+.page-header {
+  text-align: center;
+  padding: var(--space-3xl) 0 var(--space-2xl);
+}
+
+.page-header .emoji-icon {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: var(--space-md);
+  animation: popBounce 2.5s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+}
+
+@keyframes popBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-12px) scale(1.1); }
+  60% { transform: translateY(-4px) scale(1.02); }
+}
+
+.page-header .subtitle {
+  font-size: 1.15rem;
+  color: var(--text-mid);
+  font-weight: 600;
+  margin-top: var(--space-sm);
+  background: linear-gradient(90deg, var(--sakura-deep), var(--lavender), var(--sky-deep));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-header .description {
+  font-size: 1rem;
+  color: var(--text-light);
+  margin-top: var(--space-md);
+}
+
+/* --- Back Button (ぷにぷにボタン) --- */
+.back-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-mid);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: var(--space-sm) var(--space-lg);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-pill);
+  transition: all var(--transition-bounce);
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.back-nav:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateX(-4px) scale(1.02);
+  box-shadow: var(--shadow-md);
+  color: var(--sakura-deep);
+}
+
+.back-nav .arrow {
+  font-size: 1.1rem;
+  transition: transform var(--transition-normal);
+}
+
+.back-nav:hover .arrow {
+  transform: translateX(-4px);
+}
+
+/* --- Card Grid --- */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-xl);
+  padding: var(--space-md) 0;
+}
+
+.card-grid-2 {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+/* --- Glass Card (ぷるぷるカード) --- */
+.glass-card {
+  background: var(--gradient-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2px solid rgba(255,255,255,0.7);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2xl) var(--space-xl);
+  cursor: pointer;
+  transition: all var(--transition-bounce);
+  box-shadow: var(--shadow-md);
+  text-decoration: none;
+  color: var(--text-dark);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* カードの上部にカラーアクセント */
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: var(--gradient-candy);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  transition: height var(--transition-normal);
+}
+
+/* ホバー時のキラキラエフェクト */
+.glass-card::after {
+  content: '✨';
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 1.2rem;
+  opacity: 0;
+  transform: scale(0) rotate(-30deg);
+  transition: all var(--transition-bounce);
+}
+
+.glass-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--sakura-light);
+  background: var(--gradient-card-hover);
+}
+
+.glass-card:hover::before {
+  height: 6px;
+}
+
+.glass-card:hover::after {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.glass-card .card-icon {
+  font-size: 3.5rem;
+  margin-bottom: var(--space-md);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  transition: transform var(--transition-bounce);
+}
+
+.glass-card:hover .card-icon {
+  transform: scale(1.15) rotate(-5deg);
+}
+
+.glass-card .card-title {
+  font-size: 1.4rem;
+  font-weight: 900;
+  margin-bottom: var(--space-sm);
+  color: var(--text-dark);
+}
+
+.glass-card .card-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-mid);
+  margin-bottom: var(--space-md);
+}
+
+.glass-card .card-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background: linear-gradient(135deg, var(--sakura-light), var(--lavender-light));
+  color: var(--text-dark);
+  padding: 6px var(--space-md);
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+/* カードのカラーバリエーション */
+.glass-card.variant-coral::before { background: var(--gradient-candy); }
+.glass-card.variant-ocean::before { background: var(--gradient-ocean); }
+.glass-card.variant-gold::before { background: var(--gradient-sunset); }
+.glass-card.variant-purple::before { background: linear-gradient(135deg, var(--lavender), var(--sky-blue)); }
+
+/* --- Location Card (背景画像付き) --- */
+.location-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all var(--transition-bounce);
+  box-shadow: var(--shadow-md);
+  min-height: 220px;
+  display: flex;
+  align-items: flex-end;
+  border: 2px solid rgba(255,255,255,0.6);
+}
+
+.location-card-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.6s ease;
+  opacity: 0.65;
+}
+
+.location-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.55) 0%,
+    rgba(0,0,0,0.15) 50%,
+    rgba(0,0,0,0.02) 100%
+  );
+  transition: background var(--transition-normal);
+}
+
+.location-card:not(.has-image) {
+  background: var(--gradient-card);
+  align-items: center;
+  justify-content: center;
+}
+
+.location-card:not(.has-image) .location-card-overlay {
+  background: none;
+}
+
+.location-card-content {
+  position: relative;
+  z-index: 1;
+  padding: var(--space-xl);
+  width: 100%;
+}
+
+.location-card.has-image .location-card-title {
+  color: white;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.location-card.has-image .location-card-count {
+  color: rgba(255,255,255,0.9);
+}
+
+.location-card:not(.has-image) .location-card-content {
+  text-align: center;
+}
+
+.location-card-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: var(--space-xs);
+  color: var(--text-dark);
+}
+
+.location-card-count {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-mid);
+}
+
+.location-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: var(--shadow-xl);
+}
+
+.location-card:hover .location-card-bg {
+  transform: scale(1.08);
+}
+
+.location-card:hover .location-card-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.6) 0%,
+    rgba(0,0,0,0.1) 50%,
+    rgba(0,0,0,0) 100%
+  );
+}
+
+/* --- Game Preview Card (ゲームプレビュー) --- */
+.preview-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-bounce);
+  cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.8);
+  position: relative;
+}
+
+.preview-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+  padding: 2px;
+  background: var(--gradient-candy);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.preview-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: var(--shadow-xl);
+}
+
+.preview-card:hover::before {
+  opacity: 1;
+}
+
+.preview-card .preview-frame {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border: none;
+  pointer-events: none;
+  background: var(--cream);
+  display: block;
+}
+
+.preview-card .preview-info {
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+}
+
+.preview-card .preview-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.preview-card .play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background: var(--gradient-candy);
+  color: white;
+  border: none;
+  padding: 8px var(--space-lg);
+  border-radius: var(--radius-pill);
+  font-family: 'M PLUS Rounded 1c', 'Noto Sans JP', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-bounce);
+  box-shadow: 0 2px 10px rgba(255,183,197,0.4);
+}
+
+.preview-card .play-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 18px rgba(255,183,197,0.5);
+}
+
+/* --- Game Play View --- */
+.play-container {
+  background: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  border: 2px solid rgba(255,255,255,0.8);
+}
+
+.play-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-xl);
+  background: var(--gradient-candy);
+  color: white;
+}
+
+.play-header .game-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.play-header .fullscreen-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background: rgba(255,255,255,0.25);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.4);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-pill);
+  font-family: 'M PLUS Rounded 1c', 'Noto Sans JP', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  backdrop-filter: blur(4px);
+}
+
+.play-header .fullscreen-btn:hover {
+  background: rgba(255,255,255,0.4);
+  transform: scale(1.05);
+}
+
+.play-frame {
+  width: 100%;
+  height: 70vh;
+  border: none;
+  display: block;
+  background: white;
+}
+
+/* --- Buttons (ぷにぷに) --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-xl);
+  border: none;
+  border-radius: var(--radius-pill);
+  font-family: 'M PLUS Rounded 1c', 'Noto Sans JP', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-bounce);
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--gradient-candy);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 183, 197, 0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 8px 25px rgba(255, 183, 197, 0.5);
+}
+
+/* --- Loading (ぐるぐる) --- */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3xl);
+  color: var(--text-mid);
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--sakura-light);
+  border-top-color: var(--sakura-deep);
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+  margin-bottom: var(--space-md);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Empty State --- */
+.empty-state {
+  text-align: center;
+  padding: var(--space-3xl);
+  color: var(--text-mid);
+  background: rgba(255,255,255,0.4);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(10px);
+  border: 1px dashed var(--sakura-light);
+}
+
+.empty-state .empty-icon {
+  font-size: 4rem;
+  margin-bottom: var(--space-md);
+  animation: popBounce 3s ease-in-out infinite;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* --- Error Page --- */
+.error-page {
+  text-align: center;
+  padding: var(--space-3xl);
+}
+
+.error-page h1 {
+  margin-bottom: var(--space-xl);
+}
+
+/* --- Footer --- */
+.footer-deco {
+  text-align: center;
+  padding: var(--space-3xl) 0 var(--space-xl);
+  color: var(--text-light);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  #app {
+    padding: var(--space-md);
+  }
+
+  h1 {
+    font-size: 1.7rem;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  .page-header {
+    padding: var(--space-2xl) 0 var(--space-xl);
+  }
+
+  .page-header .emoji-icon {
+    font-size: 3rem;
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .card-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .glass-card {
+    padding: var(--space-lg);
+  }
+
+  .play-frame {
+    height: 50vh;
+  }
+
+  .play-header {
+    flex-direction: column;
+    gap: var(--space-sm);
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  .preview-card .preview-info {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+}
