@@ -1,7 +1,8 @@
 import { supabase } from '../supabase.js';
 
 /**
- * ③ Event Page — Game thumbnails grid (static cards, no live iframes)
+ * ③ Event Page — Game static preview grid
+ * iframes show game HTML/CSS only (scripts stripped for static appearance)
  */
 export function renderEvent(container, params) {
   container.innerHTML = `
@@ -23,11 +24,13 @@ export function renderEvent(container, params) {
   loadEventGames(params.id);
 }
 
-// Fun icons to assign to game cards
-const gameIcons = ['🎮', '🕹️', '🎯', '🎲', '🧩', '🎪', '🚀', '⭐', '🌟', '🎨', '🤖', '🦄', '🐉', '🏆', '💎', '🔮'];
-
-// Color variants for game cards
-const cardVariants = ['game-pink', 'game-purple', 'game-blue', 'game-mint', 'game-orange', 'game-gold'];
+/**
+ * Build the base URL for a game's storage directory
+ */
+function getGameBaseUrl(storagePath) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  return `${supabaseUrl}/storage/v1/object/public/game-files/${storagePath}/`;
+}
 
 async function loadEventGames(eventId) {
   const grid = document.getElementById('games-grid');
@@ -70,7 +73,10 @@ async function loadEventGames(eventId) {
       return;
     }
 
-    grid.innerHTML = games.map((game, index) => createGameCard(game, index)).join('');
+    grid.innerHTML = games.map(game => createGameCard(game)).join('');
+
+    // Load static preview content for each game (scripts stripped)
+    games.forEach(game => loadStaticPreview(game));
 
     // Add click handlers
     grid.querySelectorAll('.preview-card').forEach(card => {
@@ -89,17 +95,19 @@ async function loadEventGames(eventId) {
   }
 }
 
-function createGameCard(game, index) {
-  const icon = gameIcons[index % gameIcons.length];
-  const variant = cardVariants[index % cardVariants.length];
-
+function createGameCard(game) {
   return `
-    <div class="preview-card ${variant}" data-id="${game.id}" role="button" tabindex="0">
-      <div class="preview-thumbnail">
-        <div class="thumbnail-bg"></div>
-        <div class="thumbnail-icon">${icon}</div>
-        <div class="thumbnail-play-overlay">
-          <span class="thumbnail-play-icon">▶</span>
+    <div class="preview-card" data-id="${game.id}" role="button" tabindex="0">
+      <div class="preview-frame-wrapper">
+        <iframe 
+          class="preview-frame" 
+          id="preview-${game.id}"
+          sandbox=""
+          loading="lazy"
+          title="${game.title}"
+        ></iframe>
+        <div class="preview-play-overlay">
+          <span class="preview-play-icon">▶</span>
         </div>
       </div>
       <div class="preview-info">
@@ -108,4 +116,55 @@ function createGameCard(game, index) {
       </div>
     </div>
   `;
+}
+
+/**
+ * Fetch game HTML, strip all <script> tags, and inject as srcdoc.
+ * This renders only HTML + CSS = static screenshot appearance.
+ */
+async function loadStaticPreview(game) {
+  const iframe = document.getElementById(`preview-${game.id}`);
+  if (!iframe) return;
+
+  try {
+    const { data: urlData } = supabase.storage
+      .from('game-files')
+      .getPublicUrl(`${game.storage_path}/${game.entry_file}`);
+
+    const gameUrl = urlData?.publicUrl || '';
+    const baseUrl = getGameBaseUrl(game.storage_path);
+
+    const response = await fetch(gameUrl);
+    if (!response.ok) return;
+
+    let html = await response.text();
+
+    // Strip ALL <script> tags and their contents → static render only
+    html = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+    // Also remove inline event handlers (onclick, onload, etc.)
+    html = html.replace(/\s(on\w+)="[^"]*"/gi, '');
+    html = html.replace(/\s(on\w+)='[^']*'/gi, '');
+
+    // Inject <base> tag for relative path resolution (images, CSS, etc.)
+    if (html.includes('<head>')) {
+      html = html.replace('<head>', `<head>\n<base href="${baseUrl}">`);
+    } else if (html.includes('<head ')) {
+      html = html.replace(/<head([^>]*)>/, `<head$1>\n<base href="${baseUrl}">`);
+    } else if (html.includes('<html')) {
+      html = html.replace(/<html([^>]*)>/, `<html$1>\n<head><base href="${baseUrl}"></head>`);
+    } else {
+      html = `<base href="${baseUrl}">\n${html}`;
+    }
+
+    // Add style to prevent scrollbars and ensure content fits
+    const freezeStyle = `<style>
+      body { overflow: hidden !important; margin: 0 !important; pointer-events: none !important; }
+      * { animation: none !important; transition: none !important; }
+    </style>`;
+    html = html.replace('</head>', `${freezeStyle}\n</head>`);
+
+    iframe.srcdoc = html;
+  } catch (err) {
+    console.error(`Failed to load preview for ${game.title}:`, err);
+  }
 }

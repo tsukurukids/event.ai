@@ -458,7 +458,7 @@ h2 {
   );
 }
 
-/* --- Game Preview Card (静止画サムネイル) --- */
+/* --- Game Preview Card (静止画プレビュー) --- */
 .preview-card {
   background: white;
   border-radius: var(--radius-lg);
@@ -475,98 +475,57 @@ h2 {
   box-shadow: var(--shadow-xl);
 }
 
-/* --- サムネイル部分 --- */
-.preview-thumbnail {
+/* --- iframeラッパー --- */
+.preview-frame-wrapper {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.thumbnail-bg {
-  position: absolute;
-  inset: 0;
-  background: var(--gradient-candy);
-  opacity: 0.85;
-  transition: opacity var(--transition-normal);
+.preview-card .preview-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  pointer-events: none;
+  background: var(--cream);
+  display: block;
 }
 
-.thumbnail-icon {
-  position: relative;
-  z-index: 1;
-  font-size: 4rem;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
-  transition: transform var(--transition-bounce);
-  animation: iconFloat 3s ease-in-out infinite;
-}
-
-@keyframes iconFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-.preview-card:hover .thumbnail-icon {
-  transform: scale(1.2) rotate(-8deg);
-  animation: none;
-}
-
-/* Hover play overlay */
-.thumbnail-play-overlay {
+/* ホバー再生オーバーレイ */
+.preview-play-overlay {
   position: absolute;
   inset: 0;
   z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0,0,0,0.3);
   opacity: 0;
   transition: opacity var(--transition-normal);
 }
 
-.preview-card:hover .thumbnail-play-overlay {
+.preview-card:hover .preview-play-overlay {
   opacity: 1;
 }
 
-.thumbnail-play-icon {
-  width: 60px;
-  height: 60px;
+.preview-play-icon {
+  width: 64px;
+  height: 64px;
   background: rgba(255,255,255,0.95);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   color: var(--sakura-deep);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  transform: scale(0.8);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  transform: scale(0.7);
   transition: transform var(--transition-bounce);
 }
 
-.preview-card:hover .thumbnail-play-icon {
+.preview-card:hover .preview-play-icon {
   transform: scale(1);
-}
-
-/* --- カラーバリエーション --- */
-.preview-card.game-pink .thumbnail-bg {
-  background: linear-gradient(135deg, #FFB7C5 0%, #F5A0B5 40%, #E8879C 100%);
-}
-.preview-card.game-purple .thumbnail-bg {
-  background: linear-gradient(135deg, #D4A5F5 0%, #C08AE8 40%, #A86FD8 100%);
-}
-.preview-card.game-blue .thumbnail-bg {
-  background: linear-gradient(135deg, #A8D8F0 0%, #82C4E6 40%, #6CB4DA 100%);
-}
-.preview-card.game-mint .thumbnail-bg {
-  background: linear-gradient(135deg, #A8E6CF 0%, #7DD8B5 40%, #5CC99C 100%);
-}
-.preview-card.game-orange .thumbnail-bg {
-  background: linear-gradient(135deg, #FFD5B5 0%, #FFC48C 40%, #FFB06A 100%);
-}
-.preview-card.game-gold .thumbnail-bg {
-  background: linear-gradient(135deg, #FFF3A3 0%, #FFE87A 40%, #FFD95B 100%);
 }
 
 /* --- カード情報部分 --- */
