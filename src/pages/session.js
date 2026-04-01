@@ -104,7 +104,6 @@ function createGameCard(game) {
         title="${game.title}"
       ></iframe>
       <div class="preview-info">
-        <span class="preview-title">${game.title}</span>
         <span class="play-btn">▶ あそぶ</span>
       </div>
     </div>

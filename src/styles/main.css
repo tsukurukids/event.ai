@@ -530,10 +530,10 @@ h2 {
 
 /* --- カード情報部分 --- */
 .preview-card .preview-info {
-  padding: var(--space-md) var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   background: white;
 }
 
@@ -550,10 +550,10 @@ h2 {
   background: var(--gradient-candy);
   color: white;
   border: none;
-  padding: 8px var(--space-lg);
+  padding: 7px var(--space-lg);
   border-radius: var(--radius-pill);
   font-family: 'M PLUS Rounded 1c', 'Noto Sans JP', sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-bounce);
@@ -725,32 +725,56 @@ h2 {
   }
 
   h1 {
-    font-size: 1.7rem;
+    font-size: 1.6rem;
   }
 
   h2 {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
   }
 
   .page-header {
-    padding: var(--space-2xl) 0 var(--space-xl);
+    padding: var(--space-xl) 0 var(--space-lg);
   }
 
   .page-header .emoji-icon {
-    font-size: 3rem;
+    font-size: 2.5rem;
   }
 
+  .page-header .subtitle {
+    font-size: 1rem;
+  }
+
+  /* 作品グリッド: モバイルは常に2列 */
   .card-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-md);
+    gap: var(--space-sm);
   }
 
+  /* 開催地カード: モバイルは1列 */
   .card-grid-2 {
     grid-template-columns: 1fr;
   }
 
   .glass-card {
     padding: var(--space-lg);
+  }
+
+  /* iframeの縦横比を少し短くしてカードを小さく */
+  .preview-frame-wrapper {
+    aspect-ratio: 4 / 3;
+  }
+
+  .preview-card .play-btn {
+    font-size: 0.78rem;
+    padding: 6px var(--space-md);
+  }
+
+  .location-card {
+    min-height: 160px;
+  }
+
+  .location-card-title {
+    font-size: 1.2rem;
   }
 
   .play-frame {
@@ -762,19 +786,45 @@ h2 {
     gap: var(--space-sm);
     text-align: center;
   }
+
+  .back-nav {
+    font-size: 0.85rem;
+    padding: var(--space-xs) var(--space-md);
+    margin-bottom: var(--space-md);
+  }
 }
 
 @media (max-width: 480px) {
-  h1 {
-    font-size: 1.4rem;
+  #app {
+    padding: var(--space-sm);
   }
 
+  h1 {
+    font-size: 1.25rem;
+  }
+
+  /* 480px以下でも2列を維持 */
   .card-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-xs);
   }
 
   .preview-card .preview-info {
-    flex-direction: column;
-    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .preview-card .play-btn {
+    font-size: 0.72rem;
+    padding: 5px var(--space-sm);
+  }
+
+  /* iframeをよりコンパクトに */
+  .preview-frame-wrapper {
+    aspect-ratio: 1 / 1;
+  }
+
+  /* 星アニメーションは重いので止める */
+  .preview-card:hover .preview-play-overlay {
+    display: none;
   }
 }

@@ -32,10 +32,10 @@ export function renderDashboard(container) {
     </div>
   `;
 
-  // Init state
+  // Init state — restore selected location from sessionStorage
   const state = {
     locations: [],
-    selectedLocationId: null,
+    selectedLocationId: sessionStorage.getItem('admin_selectedLocationId') || null,
   };
 
   // Load data
@@ -95,11 +95,21 @@ async function loadSidebar(state) {
   sidebarLocations.querySelectorAll('.sidebar-item').forEach(item => {
     item.addEventListener('click', () => {
       state.selectedLocationId = item.dataset.locationId;
+      sessionStorage.setItem('admin_selectedLocationId', state.selectedLocationId);
       sidebarLocations.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
       item.classList.add('active');
       loadLocationContent(state);
     });
   });
+
+  // Auto-restore previously selected location
+  if (state.selectedLocationId) {
+    const activeBtn = sidebarLocations.querySelector(`[data-location-id="${state.selectedLocationId}"]`);
+    if (activeBtn) {
+      activeBtn.classList.add('active');
+      loadLocationContent(state);
+    }
+  }
 }
 
 /**
@@ -222,40 +232,46 @@ function renderEventCard(event) {
   return `
     <div class="content-card" data-event-id="${event.id}">
       <div class="content-card-header">
-        <h3>📅 ${event.label}</h3>
+        <div class="event-toggle-area" data-event-id="${event.id}">
+          <span class="toggle-chevron">▾</span>
+          <h3>📅 ${event.label}</h3>
+          <span class="event-game-count">🎮 ${allGames.length} 作品</span>
+        </div>
         <div style="display:flex; gap:0.3rem;">
           <button class="btn btn-ghost btn-sm edit-event-btn" data-event-id="${event.id}" data-label="${event.label}" data-date="${event.date}">✏️</button>
           <button class="btn btn-danger btn-sm delete-event-btn" data-event-id="${event.id}" data-label="${event.label}">🗑️</button>
         </div>
       </div>
 
-      <p style="color:var(--admin-text-light); font-size:0.85rem; margin:0.5rem 0;">🎮 ${allGames.length} 作品</p>
+      <div class="event-card-body" id="event-body-${event.id}">
+        <div class="event-body-inner">
+          <ul class="item-list">
+            ${allGames.map(game => `
+              <li class="item-row">
+                <span class="item-name">
+                  ${game.is_published ? '🟢' : '🔴'} ${game.title}
+                </span>
+                <div class="item-actions">
+                  <button class="btn btn-ghost btn-sm toggle-publish-btn" data-game-id="${game.id}" data-published="${game.is_published}">
+                    ${game.is_published ? '非公開にする' : '公開する'}
+                  </button>
+                  <button class="btn btn-ghost btn-sm edit-game-btn" data-game-id="${game.id}" data-title="${game.title}">✏️</button>
+                  <button class="btn btn-danger btn-sm delete-game-btn" data-game-id="${game.id}" data-title="${game.title}" data-storage-path="${game.storage_path}">🗑️</button>
+                </div>
+              </li>
+            `).join('')}
+          </ul>
 
-      <ul class="item-list">
-        ${allGames.map(game => `
-          <li class="item-row">
-            <span class="item-name">
-              ${game.is_published ? '🟢' : '🔴'} ${game.title}
-            </span>
-            <div class="item-actions">
-              <button class="btn btn-ghost btn-sm toggle-publish-btn" data-game-id="${game.id}" data-published="${game.is_published}">
-                ${game.is_published ? '非公開にする' : '公開する'}
-              </button>
-              <button class="btn btn-ghost btn-sm edit-game-btn" data-game-id="${game.id}" data-title="${game.title}">✏️</button>
-              <button class="btn btn-danger btn-sm delete-game-btn" data-game-id="${game.id}" data-title="${game.title}" data-storage-path="${game.storage_path}">🗑️</button>
+          <div class="upload-area upload-zone" data-session-id="${defaultSessionId}" data-event-id="${event.id}" style="margin-top:0.75rem;">
+            <div class="upload-icon">📁</div>
+            <p>フォルダをドラッグ＆ドロップ、またはクリックしてアップロード</p>
+            <p class="upload-hint">HTML/CSS/JSファイルを含むフォルダ</p>
+            <input type="file" class="folder-input" webkitdirectory directory multiple style="display:none;">
+            <div class="upload-progress">
+              <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+              <p class="progress-text"></p>
             </div>
-          </li>
-        `).join('')}
-      </ul>
-
-      <div class="upload-area upload-zone" data-session-id="${defaultSessionId}" data-event-id="${event.id}" style="margin-top:0.75rem;">
-        <div class="upload-icon">📁</div>
-        <p>フォルダをドラッグ＆ドロップ、またはクリックしてアップロード</p>
-        <p class="upload-hint">HTML/CSS/JSファイルを含むフォルダ</p>
-        <input type="file" class="folder-input" webkitdirectory directory multiple style="display:none;">
-        <div class="upload-progress">
-          <div class="progress-bar"><div class="progress-bar-fill"></div></div>
-          <p class="progress-text"></p>
+          </div>
         </div>
       </div>
     </div>
@@ -266,6 +282,19 @@ function renderEventCard(event) {
  * Attach event handlers to dynamically created elements
  */
 function attachEventCardHandlers(state) {
+  // Accordion toggle
+  document.querySelectorAll('.event-toggle-area').forEach(toggle => {
+    toggle.addEventListener('click', () => {
+      const eventId = toggle.dataset.eventId;
+      const body = document.getElementById(`event-body-${eventId}`);
+      const card = toggle.closest('.content-card');
+      const chevron = toggle.querySelector('.toggle-chevron');
+      const isCollapsed = body.classList.toggle('collapsed');
+      card.classList.toggle('card-collapsed', isCollapsed);
+      chevron.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+    });
+  });
+
   // Edit event buttons
   document.querySelectorAll('.edit-event-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
