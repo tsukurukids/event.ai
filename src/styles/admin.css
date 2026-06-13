@@ -531,6 +531,119 @@ body {
   border-color: var(--accent) !important;
 }
 
+/* ===== 体験イベント管理 ===== */
+
+/* 表示状態カード */
+.exp-admin-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius);
+  border: 1.5px solid;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.exp-admin-status-active {
+  background: var(--success-light);
+  border-color: #86efac;
+}
+
+.exp-admin-status-inactive {
+  background: #fafafa;
+  border-color: var(--admin-border);
+}
+
+.exp-admin-status-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.exp-admin-status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.exp-admin-status-active .exp-admin-status-dot {
+  background: var(--success);
+  box-shadow: 0 0 0 3px #bbf7d0;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+.exp-admin-status-inactive .exp-admin-status-dot {
+  background: #d4d4d8;
+}
+
+@keyframes statusPulse {
+  0%, 100% { box-shadow: 0 0 0 3px #bbf7d0; }
+  50% { box-shadow: 0 0 0 6px #dcfce7; }
+}
+
+.exp-admin-status-label {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--admin-text);
+  margin-bottom: 0.2rem;
+}
+
+.exp-admin-status-active .exp-admin-status-label {
+  color: var(--success);
+}
+
+.exp-admin-status-hint {
+  font-size: 0.8rem;
+  color: var(--admin-text-light);
+  line-height: 1.5;
+}
+
+.exp-admin-status-right {
+  flex-shrink: 0;
+}
+
+.url-display {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.url-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  background: var(--admin-bg);
+  color: var(--admin-text);
+}
+
+.exp-game-status {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.status-ok { background: #e6f9ee; color: #1a7f4b; }
+.status-warn { background: #fff3e0; color: #e65100; }
+.status-info { background: #e3f2fd; color: #1565c0; }
+
 /* ===== レスポンシブ ===== */
 @media (max-width: 768px) {
   .admin-sidebar {

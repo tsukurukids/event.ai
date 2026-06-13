@@ -5,7 +5,9 @@ import { renderEvent } from './pages/event.js';
 import { renderPlay } from './pages/play.js';
 import './styles/main.css';
 
-// Initialize router
+/**
+ * ギャラリー専用エントリ（体験ページとは完全独立）
+ */
 new Router([
   { path: '/', handler: renderHome },
   { path: '/location/:id', handler: renderLocation },

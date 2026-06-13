@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { initExperienceAdmin, handleAddEvent } from './experience.js';
 
 /**
  * Main admin dashboard
@@ -11,10 +12,17 @@ export function renderDashboard(container) {
           <h2>🔧 管理ダッシュボード</h2>
         </div>
         <div class="sidebar-section">
-          <div class="sidebar-section-title">開催地</div>
+          <div class="sidebar-section-title">開催地（ギャラリー）</div>
           <div id="sidebar-locations"></div>
           <button class="sidebar-item" id="add-location-btn">
             <span class="item-icon">＋</span> 開催地を追加
+          </button>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">開催イベント（AI体験）</div>
+          <div id="sidebar-themes"></div>
+          <button class="sidebar-item" id="add-theme-btn">
+            <span class="item-icon">＋</span> 開催イベントを追加
           </button>
         </div>
         <div class="sidebar-footer">
@@ -32,18 +40,31 @@ export function renderDashboard(container) {
     </div>
   `;
 
-  // Init state — restore selected location from sessionStorage
+  const adminCallbacks = {
+    showToast,
+    showConfirm,
+  };
+
+  // Init state — restore from sessionStorage
   const state = {
     locations: [],
+    themes: [],
+    adminMode: sessionStorage.getItem('admin_mode') || 'gallery',
     selectedLocationId: sessionStorage.getItem('admin_selectedLocationId') || null,
+    selectedThemeId: sessionStorage.getItem('admin_selectedThemeId') || null,
   };
 
   // Load data
   loadSidebar(state);
+  initExperienceAdmin(state, adminCallbacks);
 
   // Event listeners
   document.getElementById('logout-btn').addEventListener('click', async () => {
     await supabase.auth.signOut();
+  });
+
+  document.getElementById('add-theme-btn').addEventListener('click', () => {
+    handleAddEvent(state, adminCallbacks);
   });
 
   document.getElementById('add-location-btn').addEventListener('click', () => {
@@ -94,16 +115,21 @@ async function loadSidebar(state) {
   // Click handlers
   sidebarLocations.querySelectorAll('.sidebar-item').forEach(item => {
     item.addEventListener('click', () => {
+      state.adminMode = 'gallery';
       state.selectedLocationId = item.dataset.locationId;
+      state.selectedThemeId = null;
+      sessionStorage.setItem('admin_mode', 'gallery');
       sessionStorage.setItem('admin_selectedLocationId', state.selectedLocationId);
+      sessionStorage.removeItem('admin_selectedThemeId');
       sidebarLocations.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+      document.querySelectorAll('#sidebar-themes .sidebar-item').forEach(i => i.classList.remove('active'));
       item.classList.add('active');
       loadLocationContent(state);
     });
   });
 
   // Auto-restore previously selected location
-  if (state.selectedLocationId) {
+  if (state.selectedLocationId && state.adminMode === 'gallery') {
     const activeBtn = sidebarLocations.querySelector(`[data-location-id="${state.selectedLocationId}"]`);
     if (activeBtn) {
       activeBtn.classList.add('active');

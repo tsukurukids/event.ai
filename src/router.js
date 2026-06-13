@@ -1,11 +1,14 @@
 /**
  * Hash-based SPA Router
- * Routes: 
+ * Routes (gallery — index.html):
  *   #/                    → Home (location selection)
  *   #/location/:id        → Event dates for a location
- *   #/event/:id           → Sessions for an event
- *   #/session/:id         → Games in a session
+ *   #/event/:id           → Games for an event
  *   #/play/:id            → Play a game
+ *
+ * Routes (experience — experience.html):
+ *   #/                    → Auto-load active published event
+ *   #/:slug               → Specific event (admin preview)
  */
 
 export class Router {
