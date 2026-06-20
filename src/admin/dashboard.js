@@ -291,7 +291,7 @@ function renderEventCard(event) {
           <div class="upload-area upload-zone" data-session-id="${defaultSessionId}" data-event-id="${event.id}" style="margin-top:0.75rem;">
             <div class="upload-icon">📁</div>
             <p>フォルダをドラッグ＆ドロップ、またはクリックしてアップロード</p>
-            <p class="upload-hint">HTML/CSS/JSファイルを含むフォルダ</p>
+            <p class="upload-hint">HTML / CSS / JS / 画像（PNG・JPG など）を含むゲームフォルダ</p>
             <input type="file" class="folder-input" webkitdirectory directory multiple style="display:none;">
             <div class="upload-progress">
               <div class="progress-bar"><div class="progress-bar-fill"></div></div>
@@ -423,18 +423,22 @@ function attachEventCardHandlers(state) {
       const files = [];
       for (const item of items) {
         const entry = item.webkitGetAsEntry?.();
-        if (entry) {
+        if (entry?.isDirectory) {
           await readEntryRecursive(entry, files);
         }
       }
 
-      if (files.length > 0) {
-        await handleUpload(files, zone.dataset.sessionId, zone.dataset.eventId, progressEl, progressBar, progressText, state);
+      if (files.length === 0) {
+        showToast('ゲームフォルダをドロップしてください', 'error');
+        return;
       }
+
+      await handleUpload(files, zone.dataset.sessionId, zone.dataset.eventId, progressEl, progressBar, progressText, state);
     });
 
     folderInput.addEventListener('change', async (e) => {
       const files = Array.from(e.target.files);
+      e.target.value = '';
       if (files.length > 0) {
         await handleUpload(files, zone.dataset.sessionId, zone.dataset.eventId, progressEl, progressBar, progressText, state);
       }
@@ -479,7 +483,7 @@ function detectContentType(fileName) {
     'json': 'application/json',
     'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
     'gif': 'image/gif', 'svg': 'image/svg+xml', 'webp': 'image/webp',
-    'ico': 'image/x-icon',
+    'bmp': 'image/bmp', 'ico': 'image/x-icon',
     'mp3': 'audio/mpeg', 'wav': 'audio/wav', 'ogg': 'audio/ogg',
     'mp4': 'video/mp4', 'webm': 'video/webm',
     'woff': 'font/woff', 'woff2': 'font/woff2',
@@ -489,8 +493,41 @@ function detectContentType(fileName) {
   return types[ext] || 'application/octet-stream';
 }
 
+function getStorageRelativePath(file) {
+  if (file.webkitRelativePath) {
+    const parts = file.webkitRelativePath.split('/');
+    parts.shift();
+    return parts.join('/');
+  }
+  if (file.relativePath) {
+    const parts = file.relativePath.split('/');
+    parts.shift();
+    return parts.join('/');
+  }
+  return file.name;
+}
+
+async function ensureSession(sessionId, eventId) {
+  if (sessionId && sessionId !== 'null') return sessionId;
+
+  const { data: newSession } = await supabase.from('sessions').insert({
+    event_id: eventId,
+    time: '00:00',
+    label: 'デフォルト',
+    sort_order: 0,
+  }).select().single();
+
+  return newSession.id;
+}
+
+function buildStoragePath(event) {
+  const gameId = `game-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const locationSlug = event.location_id.substring(0, 8);
+  return `${locationSlug}/${event.date}/${gameId}`;
+}
+
 /**
- * Handle folder upload
+ * Handle folder upload (HTML/CSS/JS + image assets)
  */
 async function handleUpload(files, sessionId, eventId, progressEl, progressBar, progressText, state) {
   progressEl.classList.add('show');
@@ -498,21 +535,16 @@ async function handleUpload(files, sessionId, eventId, progressEl, progressBar, 
   progressText.textContent = 'アップロード準備中...';
 
   try {
-    // If no session exists, create a default one
-    if (!sessionId || sessionId === 'null') {
-      const { data: newSession } = await supabase.from('sessions').insert({
-        event_id: eventId,
-        time: '00:00',
-        label: 'デフォルト',
-        sort_order: 0,
-      }).select().single();
-      sessionId = newSession.id;
-    }
+    sessionId = await ensureSession(sessionId, eventId);
 
-    // Get event info for storage path
-    const { data: event } = await supabase.from('events').select('date, location_id').eq('id', eventId).single();
+    const { data: event, error: eventError } = await supabase
+      .from('events')
+      .select('date, location_id')
+      .eq('id', eventId)
+      .single();
 
-    // Determine folder name
+    if (eventError || !event) throw new Error('開催日情報の取得に失敗しました');
+
     let folderName = '';
     if (files[0].webkitRelativePath) {
       folderName = files[0].webkitRelativePath.split('/')[0];
@@ -522,37 +554,20 @@ async function handleUpload(files, sessionId, eventId, progressEl, progressBar, 
       folderName = `game-${Date.now()}`;
     }
 
-    const gameId = `game-${Date.now()}`;
-    const locationSlug = event.location_id.substring(0, 8);
-    const storagePath = `${locationSlug}/${event.date}/${gameId}`;
-
-    // Upload files
+    const storagePath = buildStoragePath(event);
     const total = files.length;
     let uploaded = 0;
 
     for (const file of files) {
-      let filePath;
-      if (file.webkitRelativePath) {
-        const parts = file.webkitRelativePath.split('/');
-        parts.shift();
-        filePath = `${storagePath}/${parts.join('/')}`;
-      } else if (file.relativePath) {
-        const parts = file.relativePath.split('/');
-        parts.shift();
-        filePath = `${storagePath}/${parts.join('/')}`;
-      } else {
-        filePath = `${storagePath}/${file.name}`;
-      }
+      const relative = getStorageRelativePath(file);
+      const filePath = `${storagePath}/${relative}`;
 
-      const contentType = detectContentType(file.name);
       const { error } = await supabase.storage.from('game-files').upload(filePath, file, {
         upsert: true,
-        contentType: contentType,
+        contentType: detectContentType(file.name),
       });
 
-      if (error) {
-        console.error('Upload error:', error);
-      }
+      if (error) console.error('Upload error:', error);
 
       uploaded++;
       const percent = Math.round((uploaded / total) * 100);
@@ -560,7 +575,6 @@ async function handleUpload(files, sessionId, eventId, progressEl, progressBar, 
       progressText.textContent = `${uploaded}/${total} ファイルをアップロード中... (${percent}%)`;
     }
 
-    // Save to database
     await supabase.from('games').insert({
       session_id: sessionId,
       title: folderName,
@@ -573,11 +587,7 @@ async function handleUpload(files, sessionId, eventId, progressEl, progressBar, 
     progressText.textContent = '✅ アップロード完了！';
     showToast(`✅ 「${folderName}」をアップロードしました`);
 
-    // Refresh
-    setTimeout(() => {
-      loadLocationContent(state);
-    }, 1000);
-
+    setTimeout(() => loadLocationContent(state), 1000);
   } catch (err) {
     console.error('Upload failed:', err);
     progressText.textContent = '❌ アップロードに失敗しました';
