@@ -1,10 +1,25 @@
+import { supabase } from '../supabase.js';
+
 /**
- * Shared utilities for loading game HTML into iframes
+ * Storage パスの各セグメントを URL エンコード（日本語ファイル名対応）
  */
+export function encodeStoragePath(path) {
+  return path
+    .split('/')
+    .filter(Boolean)
+    .map(segment => encodeURIComponent(segment))
+    .join('/');
+}
 
 export function getGameBaseUrl(storagePath) {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  return `${supabaseUrl}/storage/v1/object/public/game-files/${storagePath}/`;
+  return `${supabaseUrl}/storage/v1/object/public/game-files/${encodeStoragePath(storagePath)}/`;
+}
+
+export function getGamePublicUrl(storagePath, entryFile = 'index.html') {
+  const filePath = `${storagePath}/${entryFile}`.replace(/\/+/g, '/');
+  const { data } = supabase.storage.from('game-files').getPublicUrl(filePath);
+  return data?.publicUrl || '';
 }
 
 export async function fetchAndPrepareHTML(url, baseUrl) {

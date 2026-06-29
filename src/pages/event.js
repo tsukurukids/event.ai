@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { getGameBaseUrl, getGamePublicUrl, prepareStaticPreviewHTML } from '../utils/gameHtml.js';
 
 /**
  * ③ Event Page — Game static preview grid
@@ -22,14 +23,6 @@ export function renderEvent(container, params) {
   `;
 
   loadEventGames(params.id);
-}
-
-/**
- * Build the base URL for a game's storage directory
- */
-function getGameBaseUrl(storagePath) {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  return `${supabaseUrl}/storage/v1/object/public/game-files/${storagePath}/`;
 }
 
 async function loadEventGames(eventId) {
@@ -126,43 +119,10 @@ async function loadStaticPreview(game) {
   if (!iframe) return;
 
   try {
-    const { data: urlData } = supabase.storage
-      .from('game-files')
-      .getPublicUrl(`${game.storage_path}/${game.entry_file}`);
-
-    const gameUrl = urlData?.publicUrl || '';
+    const gameUrl = getGamePublicUrl(game.storage_path, game.entry_file);
     const baseUrl = getGameBaseUrl(game.storage_path);
-
-    const response = await fetch(gameUrl);
-    if (!response.ok) return;
-
-    let html = await response.text();
-
-    // Strip ALL <script> tags and their contents → static render only
-    html = html.replace(/<script[\s\S]*?<\/script>/gi, '');
-    // Also remove inline event handlers (onclick, onload, etc.)
-    html = html.replace(/\s(on\w+)="[^"]*"/gi, '');
-    html = html.replace(/\s(on\w+)='[^']*'/gi, '');
-
-    // Inject <base> tag for relative path resolution (images, CSS, etc.)
-    if (html.includes('<head>')) {
-      html = html.replace('<head>', `<head>\n<base href="${baseUrl}">`);
-    } else if (html.includes('<head ')) {
-      html = html.replace(/<head([^>]*)>/, `<head$1>\n<base href="${baseUrl}">`);
-    } else if (html.includes('<html')) {
-      html = html.replace(/<html([^>]*)>/, `<html$1>\n<head><base href="${baseUrl}"></head>`);
-    } else {
-      html = `<base href="${baseUrl}">\n${html}`;
-    }
-
-    // Add style to prevent scrollbars and ensure content fits
-    const freezeStyle = `<style>
-      body { overflow: hidden !important; margin: 0 !important; pointer-events: none !important; }
-      * { animation: none !important; transition: none !important; }
-    </style>`;
-    html = html.replace('</head>', `${freezeStyle}\n</head>`);
-
-    iframe.srcdoc = html;
+    const html = await prepareStaticPreviewHTML(gameUrl, baseUrl);
+    if (html) iframe.srcdoc = html;
   } catch (err) {
     console.error(`Failed to load preview for ${game.title}:`, err);
   }

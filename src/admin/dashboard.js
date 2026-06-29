@@ -175,7 +175,7 @@ async function loadLocationContent(state) {
     ${imagePreview}
     <div id="events-container">
       ${events && events.length > 0 
-        ? events.map(event => renderEventCard(event)).join('') 
+        ? events.map((event, i) => renderEventCard(event, i, events.length)).join('') 
         : '<p style="color:var(--admin-text-light); text-align:center; padding:2rem;">まだ開催日がありません。「開催日を追加」ボタンで追加しましょう。</p>'
       }
     </div>
@@ -246,14 +246,54 @@ async function loadLocationContent(state) {
 }
 
 /**
+ * 開催日（イベント）の表示順を入れ替える。
+ * 隣り合うイベントと順序を交換し、sort_order を 0..n-1 に正規化して保存する。
+ */
+async function moveEvent(state, eventId, direction) {
+  const { data: events, error } = await supabase
+    .from('events')
+    .select('id, sort_order')
+    .eq('location_id', state.selectedLocationId)
+    .order('sort_order');
+
+  if (error || !events) {
+    console.error('Error loading events for reorder:', error);
+    return;
+  }
+
+  const idx = events.findIndex(e => e.id === eventId);
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= events.length) return;
+
+  [events[idx], events[swapIdx]] = [events[swapIdx], events[idx]];
+
+  // sort_order を順番通りに振り直して保存（古いデータの null/重複も正規化）
+  const updates = await Promise.all(
+    events.map((e, i) =>
+      supabase.from('events').update({ sort_order: i }).eq('id', e.id)
+    )
+  );
+
+  if (updates.some(u => u.error)) {
+    console.error('Error updating sort order:', updates.find(u => u.error)?.error);
+    showToast('❌ 並び替えに失敗しました', 'error');
+    return;
+  }
+
+  loadLocationContent(state);
+}
+
+/**
  * Render an event card with its games (flattened from sessions)
  */
-function renderEventCard(event) {
+function renderEventCard(event, index = 0, total = 1) {
   // Flatten all games from all sessions
   const sessions = event.sessions || [];
   const allGames = sessions.flatMap(s => (s.games || []).map(g => ({ ...g, sessionId: s.id })));
   // Get first session ID for uploads
   const defaultSessionId = sessions.length > 0 ? sessions[0].id : null;
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
 
   return `
     <div class="content-card" data-event-id="${event.id}">
@@ -264,6 +304,8 @@ function renderEventCard(event) {
           <span class="event-game-count">🎮 ${allGames.length} 作品</span>
         </div>
         <div style="display:flex; gap:0.3rem;">
+          <button class="btn btn-ghost btn-sm move-event-btn" data-event-id="${event.id}" data-dir="up" title="上へ" ${isFirst ? 'disabled' : ''}>↑</button>
+          <button class="btn btn-ghost btn-sm move-event-btn" data-event-id="${event.id}" data-dir="down" title="下へ" ${isLast ? 'disabled' : ''}>↓</button>
           <button class="btn btn-ghost btn-sm edit-event-btn" data-event-id="${event.id}" data-label="${event.label}" data-date="${event.date}">✏️</button>
           <button class="btn btn-danger btn-sm delete-event-btn" data-event-id="${event.id}" data-label="${event.label}">🗑️</button>
         </div>
@@ -333,6 +375,15 @@ function attachEventCardHandlers(state) {
         loadLocationContent(state);
         showToast('✅ 開催日を更新しました');
       });
+    });
+  });
+
+  // Move event up/down (reorder 開催日)
+  document.querySelectorAll('.move-event-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (btn.disabled) return;
+      moveEvent(state, btn.dataset.eventId, btn.dataset.dir);
     });
   });
 
@@ -493,6 +544,77 @@ function detectContentType(fileName) {
   return types[ext] || 'application/octet-stream';
 }
 
+/**
+ * Supabase Storage は非ASCII（日本語）や % をキーに使えない（InvalidKey）。
+ * 日本語などを含むパスを ASCII 安全名に変換する。
+ * 同じ元セグメントは常に同じ安全名になる（決定的ハッシュ）。
+ */
+function hashStr(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
+  }
+  return h.toString(36);
+}
+
+const SAFE_SEGMENT = /^[A-Za-z0-9._-]+$/;
+
+function safeSegment(seg) {
+  if (!seg || SAFE_SEGMENT.test(seg)) return seg;
+  const dot = seg.lastIndexOf('.');
+  let ext = '';
+  if (dot > 0) {
+    const e = seg.slice(dot);
+    if (/^\.[A-Za-z0-9]+$/.test(e)) ext = e.toLowerCase();
+  }
+  return `a_${hashStr(seg)}${ext}`;
+}
+
+function safeRelativePath(rel) {
+  return rel.split('/').map(safeSegment).join('/');
+}
+
+const TEXT_EXTS = new Set(['html', 'htm', 'css', 'js', 'mjs', 'json', 'svg', 'xml', 'txt']);
+
+function isTextFile(name) {
+  return TEXT_EXTS.has(name.split('.').pop()?.toLowerCase());
+}
+
+function replaceAllStr(str, find, repl) {
+  if (!find || find === repl) return str;
+  return str.split(find).join(repl);
+}
+
+/**
+ * 元の相対パス → 安全な相対パス の置換ペアを作る。
+ * ファイルのフルパスと、各ディレクトリ接頭辞（末尾スラッシュ付き）の両方を対象にし、
+ * HTML/CSS/JS 内の静的参照と動的（dir + 名前）参照の両方を解決する。
+ */
+function buildPathReplacements(relativePaths) {
+  const map = new Map();
+  for (const rel of relativePaths) {
+    const safe = safeRelativePath(rel);
+    if (safe !== rel) map.set(rel, safe);
+
+    const parts = rel.split('/');
+    const safeParts = safe.split('/');
+    for (let i = 1; i < parts.length; i++) {
+      const dir = parts.slice(0, i).join('/') + '/';
+      const safeDir = safeParts.slice(0, i).join('/') + '/';
+      if (dir !== safeDir) map.set(dir, safeDir);
+    }
+  }
+  return [...map.entries()].sort((a, b) => b[0].length - a[0].length);
+}
+
+function rewriteTextContent(text, replacements) {
+  let out = text;
+  for (const [find, repl] of replacements) {
+    out = replaceAllStr(out, find, repl);
+  }
+  return out;
+}
+
 function getStorageRelativePath(file) {
   if (file.webkitRelativePath) {
     const parts = file.webkitRelativePath.split('/');
@@ -558,13 +680,27 @@ async function handleUpload(files, sessionId, eventId, progressEl, progressBar, 
     const total = files.length;
     let uploaded = 0;
 
-    for (const file of files) {
+    // 各ファイルの相対パスを算出し、日本語などを ASCII 安全名へ変換する置換表を作成
+    const entries = files.map(file => {
       const relative = getStorageRelativePath(file);
-      const filePath = `${storagePath}/${relative}`;
+      return { file, relative, safe: safeRelativePath(relative) };
+    });
+    const replacements = buildPathReplacements(entries.map(e => e.relative));
 
-      const { error } = await supabase.storage.from('game-files').upload(filePath, file, {
+    for (const { file, safe } of entries) {
+      const filePath = `${storagePath}/${safe}`;
+      const contentType = detectContentType(file.name);
+
+      // テキスト系（HTML/CSS/JS等）は中の参照パスも安全名に書き換える
+      let body = file;
+      if (replacements.length > 0 && isTextFile(file.name)) {
+        const text = await file.text();
+        body = new Blob([rewriteTextContent(text, replacements)], { type: contentType });
+      }
+
+      const { error } = await supabase.storage.from('game-files').upload(filePath, body, {
         upsert: true,
-        contentType: detectContentType(file.name),
+        contentType,
       });
 
       if (error) console.error('Upload error:', error);

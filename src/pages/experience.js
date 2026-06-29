@@ -114,7 +114,7 @@ function buildCoverflow(container, event, genres) {
         <button class="exp-modal-close" id="exp-modal-close" aria-label="閉じる">✕</button>
         <div class="exp-modal-game">
           <iframe class="exp-iframe" id="exp-modal-iframe"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-modals allow-forms"
             src=""></iframe>
         </div>
         <div class="exp-modal-side">
