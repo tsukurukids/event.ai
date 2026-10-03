@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { getGenreFolderLabel } from '../config/workshopGenres.js';
 import { listStarterAssetFiles, workshopAssetUrl } from '../config/workshopAssets.js';
 
 function escapeHtml(str) {
@@ -89,7 +90,7 @@ async function fetchAssetBlob(genreId, file) {
 export async function downloadNamedStarterZip({ participantName, genre }) {
   if (!genre) throw new Error('ジャンルがありません');
 
-  const folderName = buildFolderName(participantName, genre.label);
+  const folderName = buildFolderName(participantName, getGenreFolderLabel(genre));
   const zip = new JSZip();
   const root = zip.folder(folderName);
   const assets = root.folder('assets');

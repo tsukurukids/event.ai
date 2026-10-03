@@ -4,7 +4,7 @@
  * UI表示用サムネ: public/workshop-ui/thumbs/{genre}/assets/
  */
 
-const ASSET_VER = '20261004b';
+const ASSET_VER = '20261004c';
 
 /** ZIP・ゲーム用の本番素材URL */
 export function workshopAssetUrl(genreId, file) {
@@ -31,10 +31,10 @@ export function getEntryPreloadUrls() {
     workshopThumbUrl('shooting', 'ship_blue.png'),
     workshopThumbUrl('shooting', 'enemy_green.png'),
     workshopThumbUrl('shooting', 'enemy_purple.png'),
-    workshopThumbUrl('puzzle', 'puyo_red.png'),
-    workshopThumbUrl('puzzle', 'puyo_blue.png'),
-    workshopThumbUrl('puzzle', 'puyo_yellow.png'),
-    workshopThumbUrl('puzzle', 'puyo_green.png'),
+    workshopThumbUrl('puzzle', 'block_red.png'),
+    workshopThumbUrl('puzzle', 'block_blue.png'),
+    workshopThumbUrl('puzzle', 'block_yellow.png'),
+    workshopThumbUrl('puzzle', 'block_green.png'),
   ];
 }
 
@@ -82,12 +82,12 @@ export const WORKSHOP_ASSET_CATALOG = {
   },
   puzzle: {
     files: [
-      'puyo_red.png',
-      'puyo_blue.png',
-      'puyo_green.png',
-      'puyo_yellow.png',
-      'puyo_purple.png',
-      'puyo_hard.png',
+      'block_red.png',
+      'block_blue.png',
+      'block_green.png',
+      'block_yellow.png',
+      'block_purple.png',
+      'block_gray.png',
     ],
   },
 };

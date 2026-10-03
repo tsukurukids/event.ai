@@ -6,7 +6,7 @@ const PAGE_SIZE = 30;
 const GENRES = {
   athletic: { label: 'アスレチック', file: 'player_robot.png' },
   shooting: { label: 'シューティング', file: 'ship_blue.png' },
-  puzzle: { label: 'かんたん落ちもの', file: 'puyo_green.png' },
+  puzzle: { label: 'パズル', file: 'block_green.png' },
 };
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
@@ -25,7 +25,7 @@ export function renderHome(container) {
       <p class="gallery-policy">体験の作品は公開から2か月間。公開中に作品をダウンロードして、おうちに持ち帰れます。</p>
       <form class="gallery-filters" role="search" aria-label="作品を探す">
         <label class="gallery-search">作品名でさがす<input type="search" name="title" placeholder="作品名を入力" maxlength="100" autocomplete="off"></label>
-        <label class="gallery-genre">ジャンル<select name="genre"><option value="">すべてのジャンル</option><option value="athletic">アスレチック</option><option value="shooting">シューティング</option><option value="puzzle">かんたん落ちもの</option></select></label>
+        <label class="gallery-genre">ジャンル<select name="genre"><option value="">すべてのジャンル</option><option value="athletic">アスレチック</option><option value="shooting">シューティング</option><option value="puzzle">パズル</option></select></label>
         <button class="gallery-search-button" type="submit">さがす</button>
       </form>
       <div class="gallery-results-head"><h2>公開中の作品</h2><p id="gallery-count" role="status" aria-live="polite"></p></div>

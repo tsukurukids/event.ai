@@ -1,5 +1,5 @@
 import { openWorkshopDemo } from '../utils/workshopDemo.js';
-import { WORKSHOP_GENRES, getGenreById } from '../config/workshopGenres.js';
+import { WORKSHOP_GENRES, getGenreById, getGenreFolderLabel } from '../config/workshopGenres.js';
 import { getWorkshopStepCards } from '../config/workshopManualSteps.js';
 import {
   listStarterAssetFiles,
@@ -36,7 +36,7 @@ let activeTransfers = 0;
 const GENRE_SCENES = {
   athletic: ['ground.png', 'player_boy.png', 'player_girl.png', 'coin.png'],
   shooting: ['ship_blue.png', 'enemy_green.png', 'enemy_purple.png'],
-  puzzle: ['puyo_red.png', 'puyo_blue.png', 'puyo_yellow.png', 'puyo_green.png'],
+  puzzle: ['block_red.png', 'block_blue.png', 'block_yellow.png', 'block_green.png'],
 };
 
 function sprite(genreId, file, className = '') {
@@ -234,7 +234,7 @@ export function renderWorkshopGenrePlaceholder(container, params) {
 }
 
 function setupModalHtml(genre) {
-  const previewName = buildFolderName(getStored(STORAGE_KEYS.name) || '', genre.label);
+  const previewName = buildFolderName(getStored(STORAGE_KEYS.name) || '', getGenreFolderLabel(genre));
   return `
     <div class="ws-modal-backdrop" data-close="1">
       <div class="ws-modal" style="--ws-accent: ${genre.color}; --ws-chip: ${genre.chip};" role="dialog" aria-modal="true" aria-labelledby="ws-modal-title">
@@ -285,7 +285,7 @@ function bindSetupModal(root, genre, onNext, onClose) {
   const nextBtn = root.querySelector('#ws-setup-next');
 
   const refreshPreview = () => {
-    previewEl.textContent = buildFolderName(nameInput.value, genre.label);
+    previewEl.textContent = buildFolderName(nameInput.value, getGenreFolderLabel(genre));
   };
   nameInput.addEventListener('input', refreshPreview);
 
@@ -340,7 +340,7 @@ function bindSetupModal(root, genre, onNext, onClose) {
 function uploadModalHtml(genre) {
   const defaultTitle =
     folderForGenre(genre.id) ||
-    buildFolderName(getStored(STORAGE_KEYS.name) || '', genre.label);
+    buildFolderName(getStored(STORAGE_KEYS.name) || '', getGenreFolderLabel(genre));
 
   return `
     <div class="ws-modal-backdrop" data-close="1">

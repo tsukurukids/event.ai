@@ -3,7 +3,7 @@ import { workshopAssetUrl } from '../config/workshopAssets.js';
 const configs = {
   athletic: { files: ['player_boy.png', 'ground.png', 'goal.png', 'coin.png'], help: '← → で移動・スペースでジャンプ。コインを集めて旗へ！' },
   shooting: { files: ['ship_blue.png', 'enemy_green.png', 'enemy_purple.png'], help: '← → で移動・スペースで発射。6体の敵を倒そう！' },
-  puzzle: { files: ['puyo_red.png', 'puyo_blue.png', 'puyo_yellow.png'], help: '← → で列を選び、スペースで落とす。同じ色を縦か横に3つそろえよう！' },
+  puzzle: { files: ['block_red.png', 'block_blue.png', 'block_yellow.png'], help: '← → で列を選び、スペースで落とす。同じ色を縦か横に3つそろえよう！' },
 };
 
 export function openWorkshopDemo(genre, trigger) {
