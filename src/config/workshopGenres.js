@@ -19,6 +19,7 @@ export const WORKSHOP_GENRES = [
   {
     id: 'puzzle',
     label: 'パズル',
+    folderLabel: 'パズル',
     tagline: '落として、つなげて、消そう！',
     emoji: '🧩',
     color: '#9B6FBD',
@@ -30,7 +31,8 @@ export function getGenreById(id) {
   return WORKSHOP_GENRES.find(g => g.id === id) || null;
 }
 
-/** ダウンロード用フォルダ名に使うラベル */
+/** ダウンロード用フォルダ名に使うラベル（表示名と同じ、または folderLabel） */
 export function getGenreFolderLabel(genre) {
-  return genre?.folderLabel || genre?.label || 'ゲーム';
+  if (!genre) return 'ゲーム';
+  return genre.folderLabel || genre.label || 'ゲーム';
 }

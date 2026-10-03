@@ -790,7 +790,16 @@ function saveDoneSteps(genreId, set) {
 }
 
 function folderForGenre(genreId) {
-  return getStored(STORAGE_KEYS.genre) === genreId ? getStored(STORAGE_KEYS.folder) : '';
+  if (getStored(STORAGE_KEYS.genre) !== genreId) return '';
+  const genre = getGenreById(genreId);
+  const name = getStored(STORAGE_KEYS.name);
+  // 古いセッションの「かんたん落ちもの」などを、現在のジャンル名で作り直す
+  if (genre && name) {
+    const next = buildFolderName(name, getGenreFolderLabel(genre));
+    if (getStored(STORAGE_KEYS.folder) !== next) setStored(STORAGE_KEYS.folder, next);
+    return next;
+  }
+  return getStored(STORAGE_KEYS.folder) || '';
 }
 
 function getStored(key) {

@@ -32,7 +32,7 @@ export function buildFolderName(participantName, genreLabel) {
 
 function starterIndexHtml(folderName, genre) {
   const safeFolder = escapeHtml(folderName);
-  const safeLabel = escapeHtml(genre.label);
+  const safeLabel = escapeHtml(getGenreFolderLabel(genre));
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -118,7 +118,7 @@ export async function downloadNamedStarterZip({ participantName, genre }) {
   assets.file(
     'README.txt',
     [
-      `ジャンル: ${genre.label}`,
+      `ジャンル: ${getGenreFolderLabel(genre)}`,
       '',
       'このフォルダの画像をゲームで使います。',
       'プロンプトに書いてあるパス（例: ./assets/ship_blue.png）をそのままでOK。',
@@ -139,7 +139,7 @@ export async function downloadNamedStarterZip({ participantName, genre }) {
       `3. 「${folderName}」フォルダを開く`,
       '4. サイトに戻って、ステップのお願い文をコピーする',
       '',
-      `ジャンル: ${genre.label}`,
+      `ジャンル: ${getGenreFolderLabel(genre)}`,
     ].join('\n')
   );
 
