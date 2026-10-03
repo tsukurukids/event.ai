@@ -1,107 +1,109 @@
 import { supabase } from '../supabase.js';
+import { formatExpiresDate } from '../utils/retention.js';
+import { workshopAssetUrl } from '../config/workshopAssets.js';
 
-/**
- * ① Home Page — Location Selection with background images
- */
-export function renderHome(container) {
-  container.innerHTML = `
-    <div class="page-header">
-      <h1>みんなのAIゲームギャラリー</h1>
-      <p class="subtitle">～ 生成AIでつくった作品たち ～</p>
-      <p class="description">開催地をえらんでね！</p>
-    </div>
-    <div class="card-grid card-grid-2" id="locations-grid">
-      <div class="loading">
-        <div class="loading-spinner"></div>
-        <p>よみこみ中...</p>
-      </div>
-    </div>
-    <div class="footer-deco">
-      <p>子ども × 生成AI 体験イベント</p>
-    </div>
-  `;
-
-  loadLocations();
-}
-
-// Default images for known locations
-const defaultImages = {
-  '那覇': '/images/naha.png',
-  'うるま': '/images/uruma.png',
+const PAGE_SIZE = 30;
+const GENRES = {
+  athletic: { label: 'アスレチック', file: 'player_robot.png' },
+  shooting: { label: 'シューティング', file: 'ship_blue.png' },
+  puzzle: { label: 'パズル', file: 'puyo_green.png' },
 };
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
-function getLocationImage(location) {
-  // Check if location has a custom image_url
-  if (location.image_url) return location.image_url;
-  // Try to find a default based on name
-  for (const [key, url] of Object.entries(defaultImages)) {
-    if (location.name.includes(key)) return url;
-  }
-  return null;
-}
+/** Public works are the entrance; creating a work belongs to the workshop. */
+export function renderHome(container) {
+  let page = 0;
+  let request = 0;
+  let disposed = false;
+  let searchTimer;
+  container.innerHTML = `
+    <section class="gallery-home">
+      <header class="gallery-heading">
+        <div><p class="gallery-eyebrow">つくったゲームで、あそぼう。</p><h1>みんなのギャラリー</h1></div>
+        <a class="gallery-workshop-link" href="/experience.html">体験ワークショップへ <span aria-hidden="true">→</span></a>
+      </header>
+      <p class="gallery-policy">体験の作品は公開から2か月間。公開中に作品をダウンロードして、おうちに持ち帰れます。</p>
+      <form class="gallery-filters" role="search" aria-label="作品を探す">
+        <label class="gallery-search">作品名でさがす<input type="search" name="title" placeholder="作品名を入力" maxlength="100" autocomplete="off"></label>
+        <label class="gallery-genre">ジャンル<select name="genre"><option value="">すべてのジャンル</option value="athletic">アスレチック</option><option value="shooting">シューティング</option><option value="puzzle">パズル</option></select></label>
+        <button class="gallery-search-button" type="submit">さがす</button>
+      </form>
+      <div class="gallery-results-head"><h2>公開中の作品</h2><p id="gallery-count" role="status" aria-live="polite"></p></div>
+      <div class="gallery-grid" id="gallery-grid" aria-busy="true"></div>
+      <nav class="gallery-pagination" aria-label="作品一覧のページ" hidden><button type="button" data-page="previous">← 前のページ</button><span id="gallery-page"></span><button type="button" data-page="next">次のページ →</button></nav>
+    </section>`;
 
-async function loadLocations() {
-  const grid = document.getElementById('locations-grid');
+  const form = container.querySelector('form');
+  const grid = container.querySelector('#gallery-grid');
+  const count = container.querySelector('#gallery-count');
+  const pagination = container.querySelector('.gallery-pagination');
+  const previous = container.querySelector('[data-page="previous"]');
+  const next = container.querySelector('[data-page="next"]');
 
-  try {
-    const { data: locations, error } = await supabase
-      .from('locations')
-      .select('*')
-      .order('sort_order');
-
-    if (error) throw error;
-
-    if (!locations || locations.length === 0) {
-      grid.innerHTML = `
-        <div class="empty-state">
-          <p>まだ開催地が登録されていません</p>
-        </div>
-      `;
-      return;
+  async function load() {
+    const token = ++request;
+    grid.setAttribute('aria-busy', 'true');
+    grid.innerHTML = '<div class="gallery-empty"><div class="loading-spinner"></div><p>作品をよみこみ中…</p></div>';
+    count.textContent = '';
+    pagination.hidden = true;
+    try {
+      let query = supabase.from('games')
+        .select('id,title,genre_id,expires_at,uploaded_at', { count: 'exact' })
+        .eq('is_published', true)
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+        .order('uploaded_at', { ascending: false }).order('id', { ascending: false });
+      const title = form.elements.title.value.trim();
+      const genre = form.elements.genre.value;
+      if (title) query = query.ilike('title', `%${title.replace(/[\\%_]/g, '\\$&')}%`);
+      if (genre) query = query.eq('genre_id', genre);
+      const { data, error, count: total } = await query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      if (disposed || token !== request) return;
+      if (error) throw error;
+      if (!data?.length && page > 0) { page = 0; return load(); }
+      count.textContent = `${total || 0}作品 · 新しい順`;
+      if (!data?.length) {
+        const filtered = title || genre;
+        grid.innerHTML = `<div class="gallery-empty"><span aria-hidden="true">🎮</span><h3>${filtered ? '作品が見つかりませんでした' : '公開中の作品はまだありません'}</h3><p>${filtered ? '作品名やジャンルを変えて、もう一度さがしてみてね。' : '体験ワークショップで完成した作品が、ここに並びます。'}</p>${filtered ? '<button type="button" class="gallery-reset">絞り込みをリセット</button>' : ''}</div>`;
+        grid.querySelector('.gallery-reset')?.addEventListener('click', () => { form.reset(); page = 0; load(); });
+      } else {
+        grid.innerHTML = data.map(createGameCard).join('');
+      }
+      const pages = Math.ceil((total || 0) / PAGE_SIZE);
+      pagination.hidden = pages <= 1;
+      previous.disabled = page === 0;
+      next.disabled = page + 1 >= pages;
+      container.querySelector('#gallery-page').textContent = `${page + 1} / ${pages}`;
+    } catch (error) {
+      if (disposed || token !== request) return;
+      console.error('Gallery load failed:', error);
+      count.textContent = '読み込みに失敗しました';
+      grid.innerHTML = '<div class="gallery-empty"><h3>作品を読み込めませんでした</h3><p>通信を確認して、もう一度お試しください。</p><button type="button" class="gallery-retry">もう一度よみこむ</button></div>';
+      grid.querySelector('.gallery-retry').addEventListener('click', load);
+    } finally {
+      if (!disposed && token === request) grid.setAttribute('aria-busy', 'false');
     }
-
-    // Get game counts for each location
-    const locationCards = await Promise.all(locations.map(async (loc) => {
-      const { count } = await supabase
-        .from('games')
-        .select('*, sessions!inner(*, events!inner(location_id))', { count: 'exact', head: true })
-        .eq('sessions.events.location_id', loc.id)
-        .eq('is_published', true);
-
-      return createLocationCard(loc, count || 0);
-    }));
-
-    grid.innerHTML = locationCards.join('');
-
-    // Add click handlers
-    grid.querySelectorAll('.location-card').forEach(card => {
-      card.addEventListener('click', () => {
-        window.location.hash = `/location/${card.dataset.id}`;
-      });
-    });
-
-  } catch (err) {
-    console.error('Error loading locations:', err);
-    grid.innerHTML = `
-      <div class="empty-state">
-        <p>データの読み込みに失敗しました</p>
-      </div>
-    `;
   }
+  const search = () => { clearTimeout(searchTimer); page = 0; load(); };
+  form.addEventListener('submit', event => { event.preventDefault(); search(); });
+  form.elements.genre.addEventListener('change', search);
+  form.elements.title.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(search, 350); });
+  previous.addEventListener('click', () => { page--; load(); grid.scrollIntoView({ block: 'start' }); });
+  next.addEventListener('click', () => { page++; load(); grid.scrollIntoView({ block: 'start' }); });
+  load();
+  return () => { disposed = true; request++; clearTimeout(searchTimer); };
 }
 
-function createLocationCard(location, gameCount) {
-  const imageUrl = getLocationImage(location);
-  const hasImage = !!imageUrl;
-
-  return `
-    <div class="location-card ${hasImage ? 'has-image' : ''}" data-id="${location.id}" role="button" tabindex="0">
-      ${hasImage ? `<div class="location-card-bg" style="background-image: url('${imageUrl}')"></div>` : ''}
-      <div class="location-card-overlay"></div>
-      <div class="location-card-content">
-        <h3 class="location-card-title">${location.name}</h3>
-        <span class="location-card-count">${gameCount}作品</span>
-      </div>
+function createGameCard(game) {
+  const genre = GENRES[game.genre_id];
+  const title = escapeHtml(game.title || 'タイトルのない作品');
+  return `<article class="gallery-card">
+    <div class="gallery-card-art gallery-card-art--${genre ? game.genre_id : 'other'}" aria-hidden="true">
+      ${genre ? `<img src="${workshopAssetUrl(game.genre_id, genre.file)}" alt="" loading="lazy" width="180" height="180">` : '<span class="gallery-art-generic">🎮</span>'}
+      <span class="gallery-art-note">${genre ? `${genre.label}のイメージ` : 'ゲーム作品'}</span>
     </div>
-  `;
+    <div class="gallery-card-body"><span class="gallery-genre-label">${genre?.label || 'オリジナルゲーム'}</span><h3>${title}</h3>
+      <p class="gallery-card-expiry">${game.expires_at ? `${escapeHtml(formatExpiresDate(game.expires_at))}まで公開` : '公開中'}</p>
+      <a class="gallery-play-link" href="#/play/${encodeURIComponent(game.id)}" aria-label="${title}であそぶ"><span aria-hidden="true">▶</span> あそぶ</a>
+    </div>
+  </article>`;
 }

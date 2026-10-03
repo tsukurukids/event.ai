@@ -7,8 +7,9 @@
  *   #/play/:id            → Play a game
  *
  * Routes (experience — experience.html):
- *   #/                    → Auto-load active published event
- *   #/:slug               → Specific event (admin preview)
+ *   #/                    → 3ジャンル選択（ワークショップ入口）
+ *   #/genre/:genreId      → ステップ一覧（DL＋Step1〜5）
+ *   #/demo/:slug          → 旧カバーフロー（管理プレビュー）
  */
 
 export class Router {

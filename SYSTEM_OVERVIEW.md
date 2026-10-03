@@ -124,6 +124,9 @@ locations（開催地）
 
 ## 7. 今後追加したい機能（要望）
 
+> **新 Supabase プロジェクトのセットアップ:** [docs/SUPABASE_NEW_PROJECT.md](docs/SUPABASE_NEW_PROJECT.md)  
+> **ワークショップ（プロンプト工房）＋当日体験の詳細要件:** [docs/EVENT_WORKSHOP_REQUIREMENTS.md](docs/EVENT_WORKSHOP_REQUIREMENTS.md)（v0.3）
+
 ユーザーからの要望を整理すると、公開サイトに **3つの利用モード** を明確に分けることが望ましい。
 
 ### 7.1 作品ギャラリー（現状 ≒ 完成）
