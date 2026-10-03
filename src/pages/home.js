@@ -1,12 +1,12 @@
 import { supabase } from '../supabase.js';
 import { formatExpiresDate } from '../utils/retention.js';
-import { workshopAssetUrl } from '../config/workshopAssets.js';
+import { workshopThumbUrl } from '../config/workshopAssets.js';
 
 const PAGE_SIZE = 30;
 const GENRES = {
   athletic: { label: 'アスレチック', file: 'player_robot.png' },
   shooting: { label: 'シューティング', file: 'ship_blue.png' },
-  puzzle: { label: 'パズル', file: 'puyo_green.png' },
+  puzzle: { label: 'かんたん落ちもの', file: 'puyo_green.png' },
 };
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
@@ -25,7 +25,7 @@ export function renderHome(container) {
       <p class="gallery-policy">体験の作品は公開から2か月間。公開中に作品をダウンロードして、おうちに持ち帰れます。</p>
       <form class="gallery-filters" role="search" aria-label="作品を探す">
         <label class="gallery-search">作品名でさがす<input type="search" name="title" placeholder="作品名を入力" maxlength="100" autocomplete="off"></label>
-        <label class="gallery-genre">ジャンル<select name="genre"><option value="">すべてのジャンル</option value="athletic">アスレチック</option><option value="shooting">シューティング</option><option value="puzzle">パズル</option></select></label>
+        <label class="gallery-genre">ジャンル<select name="genre"><option value="">すべてのジャンル</option><option value="athletic">アスレチック</option><option value="shooting">シューティング</option><option value="puzzle">かんたん落ちもの</option></select></label>
         <button class="gallery-search-button" type="submit">さがす</button>
       </form>
       <div class="gallery-results-head"><h2>公開中の作品</h2><p id="gallery-count" role="status" aria-live="polite"></p></div>
@@ -98,7 +98,7 @@ function createGameCard(game) {
   const title = escapeHtml(game.title || 'タイトルのない作品');
   return `<article class="gallery-card">
     <div class="gallery-card-art gallery-card-art--${genre ? game.genre_id : 'other'}" aria-hidden="true">
-      ${genre ? `<img src="${workshopAssetUrl(game.genre_id, genre.file)}" alt="" loading="lazy" width="180" height="180">` : '<span class="gallery-art-generic">🎮</span>'}
+      ${genre ? `<img src="${workshopThumbUrl(game.genre_id, genre.file)}" alt="" loading="lazy" decoding="async" width="128" height="128">` : '<span class="gallery-art-generic">🎮</span>'}
       <span class="gallery-art-note">${genre ? `${genre.label}のイメージ` : 'ゲーム作品'}</span>
     </div>
     <div class="gallery-card-body"><span class="gallery-genre-label">${genre?.label || 'オリジナルゲーム'}</span><h3>${title}</h3>

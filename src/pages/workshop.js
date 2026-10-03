@@ -2,12 +2,9 @@ import { openWorkshopDemo } from '../utils/workshopDemo.js';
 import { WORKSHOP_GENRES, getGenreById } from '../config/workshopGenres.js';
 import { getWorkshopStepCards } from '../config/workshopManualSteps.js';
 import {
-  applyAssetPlaceholders,
-  defaultAssetSelections,
-  getChoicesForStep,
   listStarterAssetFiles,
-  workshopAssetUrl,
-  resolveChoiceOption,
+  workshopThumbUrl,
+  workshopTitleArtUrl,
 } from '../config/workshopAssets.js';
 import '../styles/workshop.css';
 import '../styles/workshop-festival.css';
@@ -30,7 +27,6 @@ const STORAGE_KEYS = {
   genre: 'ws-genre-id',
   folder: 'ws-folder-name',
   done: 'ws-done-steps',
-  assets: 'ws-asset-selections',
   drafts: 'ws-prompt-draft',
   checks: 'ws-step-checks',
 };
@@ -44,16 +40,19 @@ const GENRE_SCENES = {
 };
 
 function sprite(genreId, file, className = '') {
-  return `<img class="ws-sprite ${className}" src="${workshopAssetUrl(genreId, file)}" alt="" draggable="false" width="160" height="160" />`;
+  return `<img class="ws-sprite ${className}" src="${workshopThumbUrl(genreId, file)}" alt="" draggable="false" width="128" height="128" decoding="async" loading="lazy" />`;
 }
 
 function genreScene(genreId) {
-  return `<span class="ws-scene ws-scene--${genreId}" aria-hidden="true">${GENRE_SCENES[genreId].map((file, i) => sprite(genreId, file, `ws-scene-item ws-scene-item--${i}`)).join('')}</span>`;
+  // 入口カードは先読み対象なので loading を eager に
+  return `<span class="ws-scene ws-scene--${genreId}" aria-hidden="true">${GENRE_SCENES[genreId].map((file, i) =>
+    `<img class="ws-sprite ws-scene-item ws-scene-item--${i}" src="${workshopThumbUrl(genreId, file)}" alt="" draggable="false" width="128" height="128" decoding="async" fetchpriority="${i === 0 ? 'high' : 'low'}" />`
+  ).join('')}</span>`;
 }
 
 function workshopNav(showTitleArt = true) {
   return `<nav class="ws-nav" aria-label="ワークショップナビゲーション">
-    <a href="/experience.html#/" class="ws-brand">${showTitleArt ? '<img class="ws-header-title-art" src="/workshop-ui/event-title.png" alt="AIでゲーム制作体験 自分だけのゲームを作ろう！" width="2172" height="724" />' : '<span class="ws-brand-icon" aria-hidden="true">✦</span><span>AIゲーム<span class="ws-brand-small">体験ワークショップ</span></span>'}</a>
+    <a href="/experience.html#/" class="ws-brand">${showTitleArt ? `<img class="ws-header-title-art" src="${workshopTitleArtUrl()}" alt="AIでゲーム制作体験 自分だけのゲームを作ろう！" width="960" height="320" decoding="async" fetchpriority="high" />` : '<span class="ws-brand-icon" aria-hidden="true">✦</span><span>AIゲーム<span class="ws-brand-small">体験ワークショップ</span></span>'}</a>
     <div class="ws-nav-actions"><button type="button" class="ws-staff-reset" data-staff-reset>スタッフ用 · 次の参加者へ</button>
     <a class="ws-gallery-link" href="/index.html#/">みんなの作品 <span aria-hidden="true">↗</span></a></div>
   </nav>`;
@@ -109,7 +108,6 @@ export function renderWorkshopGenrePlaceholder(container, params) {
   const state = {
     done: loadDoneSteps(genre.id),
     openCardId: null,
-    assetSelections: loadAssetSelections(genre.id),
   };
 
   const paint = (openId = null) => {
@@ -224,13 +222,9 @@ export function renderWorkshopGenrePlaceholder(container, params) {
       return;
     }
 
-    const draftPrompt = loadDraft(genre.id, card.id) ?? applyAssetPlaceholders(
-      card.data.prompt || '',
-      genre.id,
-      state.assetSelections
-    );
-    root.innerHTML = promptModalHtml(genre, card, cards, draftPrompt, state.assetSelections, state.done);
-    bindPromptModal(root, genre, card, state, () => {
+    const draftPrompt = loadDraft(genre.id, card.id) ?? (card.data.prompt || '');
+    root.innerHTML = promptModalHtml(genre, card, cards, draftPrompt, state.done);
+    bindPromptModal(root, genre, card, () => {
       markDone(card.id);
       paint(null);
     }, () => paint(null));
@@ -538,34 +532,10 @@ async function readDataTransferFolder(items) {
   return files;
 }
 
-function promptModalHtml(genre, card, allCards, draftPrompt, assetSelections, doneSteps) {
+function promptModalHtml(genre, card, allCards, draftPrompt, doneSteps) {
   const promptCards = allCards.filter((c) => c.kind === 'prompt');
   const stepNo = (card.stepIndex ?? 0) + 1;
   const data = card.data;
-  const assetChoiceGroups = getChoicesForStep(genre.id, card.id);
-
-  const assetPickers = assetChoiceGroups
-    .map((group) => {
-      const selectedId = assetSelections?.[group.slot] || group.options[0]?.id;
-      return `
-        <div class="ws-asset-picker" data-slot="${escapeAttr(group.slot)}">
-          <p class="ws-hint-label">${escapeHtml(group.label)}</p>
-          <div class="ws-asset-grid" role="group" aria-label="${escapeAttr(group.label)}">
-            ${group.options
-              .map(
-                (opt) => `
-              <button type="button" class="ws-asset-card ${opt.id === selectedId ? 'is-selected' : ''}"
-                aria-pressed="${opt.id === selectedId ? 'true' : 'false'}"
-                data-slot="${escapeAttr(group.slot)}" data-option-id="${escapeAttr(opt.id)}">
-                <img class="ws-asset-thumb" src="${escapeAttr(opt.preview)}" alt="" loading="lazy" />
-                <span class="ws-asset-label">${escapeHtml(opt.label)}</span>
-              </button>`
-              )
-              .join('')}
-          </div>
-        </div>`;
-    })
-    .join('');
 
   const hints = (data.hintGroups || [])
     .map(
@@ -619,9 +589,6 @@ function promptModalHtml(genre, card, allCards, draftPrompt, assetSelections, do
         <p class="ws-modal-badge">Step ${stepNo}</p>
         <h2 class="ws-modal-title">${escapeHtml(data.title)}</h2>
 
-
-        ${assetPickers}
-
         <div class="ws-prompt-toolbar">
           <label class="ws-name-label" for="ws-prompt-text">AIへのお願い文</label>
           <button type="button" class="ws-dl-btn" id="ws-copy-prompt">📋 お願い文をコピー</button>
@@ -667,7 +634,7 @@ function promptModalHtml(genre, card, allCards, draftPrompt, assetSelections, do
   `;
 }
 
-function bindPromptModal(root, genre, card, state, onNext, onClose) {
+function bindPromptModal(root, genre, card, onNext, onClose) {
   root.querySelectorAll('[data-close="1"]').forEach((el) => {
     el.addEventListener('click', (e) => {
       if (el.classList.contains('ws-modal-backdrop') && e.target !== el) return;
@@ -687,34 +654,6 @@ function bindPromptModal(root, genre, card, state, onNext, onClose) {
     input.checked = Array.isArray(checked) && checked.includes(input.dataset.check);
     input.addEventListener('change', () => {
       setStored(checkKey, JSON.stringify([...root.querySelectorAll('[data-check]:checked')].map(el => el.dataset.check)));
-    });
-  });
-
-  root.querySelectorAll('.ws-asset-card').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const slot = btn.dataset.slot;
-      const optionId = btn.dataset.optionId;
-      const previous = resolveChoiceOption(genre.id, slot, state.assetSelections[slot]);
-      const selected = resolveChoiceOption(genre.id, slot, optionId);
-      const oldDefault = applyAssetPlaceholders(card.data.prompt || '', genre.id, state.assetSelections);
-      state.assetSelections[slot] = optionId;
-      saveAssetSelections(genre.id, state.assetSelections);
-
-      const picker = btn.closest('.ws-asset-picker');
-      picker?.querySelectorAll('.ws-asset-card').forEach((el) => {
-        const on = el.dataset.optionId === optionId;
-        el.classList.toggle('is-selected', on);
-        el.setAttribute('aria-pressed', on ? 'true' : 'false');
-      });
-      if (textarea.value === oldDefault) {
-        textarea.value = applyAssetPlaceholders(card.data.prompt || '', genre.id, state.assetSelections);
-      } else if (previous && selected && previous.id !== selected.id) {
-        // Update only the selected asset references, preserving participant edits.
-        for (const field of ['path', 'label', 'promptExtra']) {
-          if (previous[field] && selected[field]) textarea.value = textarea.value.split(previous[field]).join(selected[field]);
-        }
-      }
-      saveDraft();
     });
   });
 
@@ -847,27 +786,6 @@ function loadDoneSteps(genreId) {
 function saveDoneSteps(genreId, set) {
   try {
     sessionStorage.setItem(doneKey(genreId), JSON.stringify([...set]));
-  } catch (_) { /* ignore */ }
-}
-
-function assetKey(genreId) {
-  return `${STORAGE_KEYS.assets}:${genreId}`;
-}
-
-function loadAssetSelections(genreId) {
-  const defaults = defaultAssetSelections(genreId);
-  try {
-    const raw = sessionStorage.getItem(assetKey(genreId));
-    if (!raw) return defaults;
-    return { ...defaults, ...JSON.parse(raw) };
-  } catch (_) {
-    return defaults;
-  }
-}
-
-function saveAssetSelections(genreId, selections) {
-  try {
-    sessionStorage.setItem(assetKey(genreId), JSON.stringify(selections));
   } catch (_) { /* ignore */ }
 }
 

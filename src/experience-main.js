@@ -1,6 +1,10 @@
 import { Router } from './router.js';
 import { renderWorkshopEntry, renderWorkshopGenrePlaceholder } from './pages/workshop.js';
+import { preloadWorkshopEntryAssets } from './config/workshopAssets.js';
 import './styles/main.css';
+
+// 入口のサムネを先に読み込み、カード表示時のカクつきを抑える
+preloadWorkshopEntryAssets();
 
 /**
  * 体験イベント専用（experience.html）

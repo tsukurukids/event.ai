@@ -18,8 +18,8 @@ export const WORKSHOP_GENRES = [
   },
   {
     id: 'puzzle',
-    label: 'パズル',
-    tagline: '並べて、そろえて、クリアしよう！',
+    label: 'かんたん落ちもの',
+    tagline: '落として、つなげて、消そう！',
     emoji: '🧩',
     color: '#9B6FBD',
     chip: '#C8A2E8',
