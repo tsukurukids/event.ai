@@ -3,12 +3,19 @@
  * 素材パスは当面 ./assets/ 配下（スターターZIPと整合）
  */
 
-const COMMON_RULES = 'ルール：画像生成はしない ／ HTML・CSS・JSだけで作る ／ わからなければスタッフへ';
+const COMMON_RULES =
+  'ルール：既存の index.html だけを編集（新しいHTMLは作らない） ／ 画像生成はしない ／ HTML・CSS・JSだけで作る ／ わからなければスタッフへ';
+
+const EDIT_INDEX =
+  'フォルダにある既存の index.html を書き換えて作って。新しい HTML ファイルは作らないで（index.html 以外を増やさない）。';
+
+const CONTINUE_INDEX =
+  'さっきのゲーム（いまの index.html）に、つぎを追加して。新しい HTML ファイルは作らないで。';
 
 const FREE_HINTS_COMMON = {
   tips: [
-    '「さっきのゲームに、つぎを追加して」から始めよう',
-    '「〇〇したら〇〇になるようにして」と書くと伝わりやすい',
+    '「さっきのゲーム（いまの index.html）に、つぎを追加して」から始めよう',
+    '新しい HTML は作らず、既存の index.html だけを書き換えてね',
     '画像や絵を作るお願いはしない（「〇〇の画像を作って」はNG）',
   ],
 };
@@ -17,7 +24,7 @@ const FINISH_HINTS = {
   shortTitle: 'かんせい！',
   title: 'かんせいさせよう',
   prompt: [
-    'さっきのゲームに、つぎを追加して。',
+    CONTINUE_INDEX,
     '・タイトル「〇〇〇」を画面の真ん中に大きく表示して',
     '・「スタート」ボタンを押したらゲームが始まるようにして',
     '・ゲームオーバーのときに「もう一度」ボタンをつけて',
@@ -46,7 +53,7 @@ const FINISH_HINTS = {
     {
       label: 'スタート画面をつける',
       text: [
-        'さっきのゲームに、つぎを追加して。',
+        CONTINUE_INDEX,
         '・タイトル「たのしいゲーム」を画面の真ん中に大きく表示して',
         '・「スタート」ボタンを押したらゲームが始まるようにして',
         '・ゲームオーバーとクリアのときに「もう一度」ボタンをつけて',
@@ -55,7 +62,7 @@ const FINISH_HINTS = {
     {
       label: '名前入りタイトル',
       text: [
-        'さっきのゲームに、つぎを追加して。',
+        CONTINUE_INDEX,
         '・タイトル「わたしのゲーム」を画面の真ん中に大きくかわいく表示して',
         '・「スタート」ボタンを押したらゲームが始まるようにして',
         '・クリアしたときに「やったー！」と大きく表示して',
@@ -72,13 +79,13 @@ export const WORKSHOP_MANUAL_STEPS = {
       title: 'うちゅうせんを動かしてみよう',
       rules: COMMON_RULES,
       prompt: [
-        'つぎのゲームをHTMLファイル1つで作って。',
+        EDIT_INDEX,
         '・画面の背景は黒い宇宙にして星をたくさん散らばらせて',
         '・画像はPromise.allですべて読み込んでからゲームループを開始して',
         '読み込む画像：',
-        '・./assets/ship_blue.png',
+        '・{{ship}}',
         'タイムスタンプをつけて読み込む（例：src + \'?t=\' + Date.now()）',
-        '・画面の下に自分の宇宙船を置いて canvasのdrawImage()で表示して',
+        '・画面の下に自分の宇宙船（{{shipLabel}}）を置いて canvasのdrawImage()で表示して',
         '・左右の矢印キーで宇宙船が左右に動けるようにして',
         '・スペースキーを押すと宇宙船から弾がまっすぐ上に飛んでいくようにして',
       ].join('\n'),
@@ -89,7 +96,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       ],
       tips: [
         'Promise.allで画像を全部読み込んでからゲームを始めるのが大切！',
-        '「さっきのゲームに、つぎを追加して」から始めると前の内容が引き継がれるよ',
+        '既存の index.html を書き換えると、次のステップへ内容が引き継がれるよ',
       ],
     },
     {
@@ -98,7 +105,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       title: 'てきをだそう',
       rules: COMMON_RULES,
       prompt: [
-        'さっきのゲームに、つぎを追加して。',
+        CONTINUE_INDEX,
         '・画像はPromise.allですべて読み込んでからゲームループを開始して',
         '追加で読み込む画像：',
         '・./assets/enemy_green.png',
@@ -124,7 +131,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       title: 'ゲームのルールをつけよう',
       rules: COMMON_RULES,
       prompt: [
-        'さっきのゲームに、つぎを追加して。',
+        CONTINUE_INDEX,
         '・敵を1体倒すたびにスコアが10点上がるようにして画面の上にスコアを表示して',
         '・自分の宇宙船はライフが3つあって敵の弾に当たるたびに1つ減るようにして',
         '・ライフを画面の上にハートマークで3つ表示して',
@@ -147,7 +154,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       shortTitle: '自由にかえる',
       title: 'じぶんだけのゲームにしよう',
       rules: COMMON_RULES,
-      prompt: 'さっきのゲームに、つぎを追加して。\n・',
+      prompt: CONTINUE_INDEX + '\n・',
       checklist: [
         '見た目かルールを1つ以上アレンジした',
       ],
@@ -184,7 +191,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         {
           label: '例：見た目チェンジ',
           text: [
-            'さっきのゲームに、つぎを追加して。',
+            CONTINUE_INDEX,
             '・宇宙船を ./assets/ship_pink.png にかえて',
             '・敵を ./assets/enemy_orange.png にかえて',
             '・背景の星をもっとたくさん増やして',
@@ -193,7 +200,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         {
           label: '例：ボス出現',
           text: [
-            'さっきのゲームに、つぎを追加して。',
+            CONTINUE_INDEX,
             '・敵を全部倒したら大きなボスキャラを出して',
             '・ボスのライフは5にして',
             '・ボスを倒したら「クリア！」と大きく表示して',
@@ -202,7 +209,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         {
           label: '例：2連射',
           text: [
-            'さっきのゲームに、つぎを追加して。',
+            CONTINUE_INDEX,
             '・スペースキーで弾を一度に2発撃てるようにして',
             '・弾を撃つときに短い音をつけて',
             '・敵を倒したときにキラキラエフェクトをつけて',
@@ -224,16 +231,16 @@ export const WORKSHOP_MANUAL_STEPS = {
       title: 'キャラクターを動かしてみよう',
       rules: COMMON_RULES,
       prompt: [
-        'つぎのゲームをHTMLファイル1つで作って。',
+        EDIT_INDEX,
         '・横スクロールのアクションゲームを作って',
         '・画像はPromise.allですべて読み込んでからゲームループを開始して',
         '読み込む画像：',
-        '・./assets/player_boy.png',
+        '・{{player}}',
         '・./assets/ground.png',
         'タイムスタンプをつけて読み込む（例：src + \'?t=\' + Date.now()）',
         '・地面を画面の下にタイル状に並べて表示して',
         'ブロックの座標は整数に丸めて隙間が出ないようにして',
-        '・キャラクターを画面の左側に置いて表示して',
+        '・キャラクター（{{playerLabel}}）を画面の左側に置いて表示して',
         '・左右の矢印キーで左右に動けるようにして',
         '・スペースキーでジャンプできるようにして',
         '・ジャンプは1回だけで二段ジャンプはできないようにして',
@@ -257,7 +264,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       title: 'コースを作ろう',
       rules: COMMON_RULES,
       prompt: [
-        'さっきのゲームに、つぎを追加して。',
+        CONTINUE_INDEX,
         '・画像はPromise.allですべて読み込んでからゲームループを開始して',
         '追加で読み込む画像：',
         '・./assets/block.png',
@@ -287,7 +294,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       title: 'ゲームのルールをつけよう',
       rules: COMMON_RULES,
       prompt: [
-        'さっきのゲームに、つぎを追加して。',
+        CONTINUE_INDEX,
         '・敵キャラクターを3体コース上に置いて左右にゆっくり動くようにして',
         '画像が読み込めない場合は茶色い四角で代替して',
         '・キャラクターが敵に当たったらライフが1つ減るようにして',
@@ -313,7 +320,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       shortTitle: '自由にかえる',
       title: 'じぶんだけのゲームにしよう',
       rules: COMMON_RULES,
-      prompt: 'さっきのゲームに、つぎを追加して。\n・',
+      prompt: CONTINUE_INDEX + '\n・',
       checklist: [
         '見た目かルールを1つ以上アレンジした',
       ],
@@ -350,7 +357,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         {
           label: '例：見た目チェンジ',
           text: [
-            'さっきのゲームに、つぎを追加して。',
+            CONTINUE_INDEX,
             '・キャラクターを ./assets/player_girl.png にかえて',
             '・空の色を明るい水色にして',
             '・クリアしたときにファンファーレをつけて',
@@ -359,7 +366,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         {
           label: '例：コイン増量',
           text: [
-            'さっきのゲームに、つぎを追加して。',
+            CONTINUE_INDEX,
             '・コインの数を10枚に増やして',
             '・コインを取ったときに音をつけて',
             '・空の色を明るい水色にして',
@@ -368,7 +375,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         {
           label: '例：むずかしく',
           text: [
-            'さっきのゲームに、つぎを追加して。',
+            CONTINUE_INDEX,
             '・敵の動くスピードを速くして',
             '・穴を2つ増やして',
             '・ジャンプの高さを少し高くして',
@@ -390,7 +397,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       title: 'ブロックを落としてみよう',
       rules: COMMON_RULES,
       prompt: [
-        'つぎの「とてもかんたんな」ゲームをHTMLファイル1つで作って。',
+        EDIT_INDEX,
         '重要：いまは「落とす・止める」だけ。消える・スコア・次の予告・ゲームオーバー・タイトル画面は絶対に作らない。',
         '・canvasサイズは横360・縦640にして',
         '・マス目は6列×12行、1マスは60×60ピクセルにして',
@@ -428,7 +435,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       title: '消えるルールをつけよう',
       rules: COMMON_RULES,
       prompt: [
-        'さっきのゲームに、つぎだけを追加して。ほかの機能は増やさないで。',
+        CONTINUE_INDEX + '\nほかの機能は増やさないで。',
         '・同じ色のブロックが上下左右に「3つ以上」つながったら消えるようにして（斜めはなし）',
         '・消えたあとに、上にあったブロックが下に落ちるようにして',
         '・落ちたあとにまた3つ以上つながっていたら、続けて消す',
@@ -451,7 +458,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       title: 'スコアとゲームオーバーをつけよう',
       rules: COMMON_RULES,
       prompt: [
-        'さっきのゲームに、つぎを追加して。',
+        CONTINUE_INDEX,
         '・ブロックを1個消すたびにスコアが10点増えるようにして',
         '・続けて2回以上消えたらボーナスで+20点して',
         '・スコアを画面の上に大きく表示して',
@@ -479,7 +486,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       shortTitle: '自由にかえる',
       title: 'じぶんだけのゲームにしよう',
       rules: COMMON_RULES,
-      prompt: 'さっきのゲームに、つぎを追加して。\n・',
+      prompt: CONTINUE_INDEX + '\n・',
       checklist: [
         '見た目かルールを1つ以上アレンジした',
       ],
@@ -514,7 +521,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         {
           label: '例：やさしくする',
           text: [
-            'さっきのゲームに、つぎを追加して。',
+            CONTINUE_INDEX,
             '・落ちるスピードを少しゆっくりにして',
             '・背景の色をやわらかいピンクにして',
             '・消えたときにキラキラエフェクトをつけて',
@@ -523,7 +530,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         {
           label: '例：むずかしくする',
           text: [
-            'さっきのゲームに、つぎを追加して。',
+            CONTINUE_INDEX,
             '・落ちるスピードをだんだん速くして',
             '・灰色ブロックが降るのをスコア50点からにして',
             '・4つ以上つながったときだけ消えるようにして',
@@ -532,7 +539,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         {
           label: '例：見た目チェンジ',
           text: [
-            'さっきのゲームに、つぎを追加して。',
+            CONTINUE_INDEX,
             '・グリッドの線を水色にして',
             '・スコアの文字を大きくかわいくして',
             '・次のブロックの枠に「つぎ」と書いて',

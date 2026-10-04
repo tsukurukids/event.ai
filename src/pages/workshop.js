@@ -2,7 +2,11 @@ import { openWorkshopDemo } from '../utils/workshopDemo.js';
 import { WORKSHOP_GENRES, getGenreById, getGenreFolderLabel } from '../config/workshopGenres.js';
 import { getWorkshopStepCards } from '../config/workshopManualSteps.js';
 import {
+  applyAssetPlaceholders,
+  defaultAssetSelections,
+  getChoicesForStep,
   listStarterAssetFiles,
+  resolveChoiceOption,
   workshopThumbUrl,
   workshopTitleArtUrl,
 } from '../config/workshopAssets.js';
@@ -27,9 +31,19 @@ const STORAGE_KEYS = {
   genre: 'ws-genre-id',
   folder: 'ws-folder-name',
   done: 'ws-done-steps',
+  assets: 'ws-asset-selections',
   drafts: 'ws-prompt-draft',
   checks: 'ws-step-checks',
 };
+
+/** スタッフ初期化まで残す（タブを閉じても消えない） */
+const WORKSHOP_STORE = (() => {
+  try {
+    return window.localStorage;
+  } catch (_) {
+    return null;
+  }
+})();
 
 let activeTransfers = 0;
 
@@ -108,6 +122,7 @@ export function renderWorkshopGenrePlaceholder(container, params) {
   const state = {
     done: loadDoneSteps(genre.id),
     openCardId: null,
+    assetSelections: loadAssetSelections(genre.id),
   };
 
   const paint = (openId = null) => {
@@ -222,9 +237,11 @@ export function renderWorkshopGenrePlaceholder(container, params) {
       return;
     }
 
-    const draftPrompt = loadDraft(genre.id, card.id) ?? (card.data.prompt || '');
-    root.innerHTML = promptModalHtml(genre, card, cards, draftPrompt, state.done);
-    bindPromptModal(root, genre, card, () => {
+    const draftPrompt =
+      loadDraft(genre.id, card.id) ??
+      applyAssetPlaceholders(card.data.prompt || '', genre.id, state.assetSelections);
+    root.innerHTML = promptModalHtml(genre, card, cards, draftPrompt, state.assetSelections, state.done);
+    bindPromptModal(root, genre, card, state, () => {
       markDone(card.id);
       paint(null);
     }, () => paint(null));
@@ -373,7 +390,7 @@ function uploadModalHtml(genre) {
 
           <ol class="ws-dl-steps">
             <li>Antigravity で作った<strong>フォルダ全体</strong>を選ぶ</li>
-            <li>中に <strong>index.html</strong> があることを確認</li>
+            <li>中に <strong>index.html</strong> があることを確認（フォルダの奥にあってもOK）</li>
             <li>アップロードすると<strong>すぐ公開</strong>されるよ</li>
           </ol>
 
@@ -532,10 +549,34 @@ async function readDataTransferFolder(items) {
   return files;
 }
 
-function promptModalHtml(genre, card, allCards, draftPrompt, doneSteps) {
+function promptModalHtml(genre, card, allCards, draftPrompt, assetSelections, doneSteps) {
   const promptCards = allCards.filter((c) => c.kind === 'prompt');
   const stepNo = (card.stepIndex ?? 0) + 1;
   const data = card.data;
+  const assetChoiceGroups = getChoicesForStep(genre.id, card.id);
+
+  const assetPickers = assetChoiceGroups
+    .map((group) => {
+      const selectedId = assetSelections?.[group.slot] || group.options[0]?.id;
+      return `
+        <div class="ws-asset-picker" data-slot="${escapeAttr(group.slot)}">
+          <p class="ws-hint-label">${escapeHtml(group.label)}</p>
+          <div class="ws-asset-grid" role="group" aria-label="${escapeAttr(group.label)}">
+            ${group.options
+              .map(
+                (opt) => `
+              <button type="button" class="ws-asset-card ${opt.id === selectedId ? 'is-selected' : ''}"
+                aria-pressed="${opt.id === selectedId ? 'true' : 'false'}"
+                data-slot="${escapeAttr(group.slot)}" data-option-id="${escapeAttr(opt.id)}">
+                <img class="ws-asset-thumb" src="${escapeAttr(opt.preview)}" alt="" loading="lazy" />
+                <span class="ws-asset-label">${escapeHtml(opt.label)}</span>
+              </button>`
+              )
+              .join('')}
+          </div>
+        </div>`;
+    })
+    .join('');
 
   const hints = (data.hintGroups || [])
     .map(
@@ -589,6 +630,8 @@ function promptModalHtml(genre, card, allCards, draftPrompt, doneSteps) {
         <p class="ws-modal-badge">Step ${stepNo}</p>
         <h2 class="ws-modal-title">${escapeHtml(data.title)}</h2>
 
+        ${assetPickers}
+
         <div class="ws-prompt-toolbar">
           <label class="ws-name-label" for="ws-prompt-text">AIへのお願い文</label>
           <button type="button" class="ws-dl-btn" id="ws-copy-prompt">📋 お願い文をコピー</button>
@@ -621,7 +664,7 @@ function promptModalHtml(genre, card, allCards, draftPrompt, doneSteps) {
         <details class="ws-help-details"><summary>困ったときのヒント・保存について</summary>
           ${data.rules ? `<p>${escapeHtml(data.rules)}</p>` : ''}
           ${data.tips?.length ? `<ul class="ws-tips">${data.tips.map(t => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
-          <p>編集中の内容はこのタブで一時保存されます。参加者交代時にスタッフがリセットします。</p>
+          <p>編集中のお願い文や進捗は、ブラウザを閉じても残ります。参加者交代時にスタッフがリセットします。</p>
         </details>
         <p class="ws-session-note">ゴールを確認したら完了にして、次は先生の案内を待とう。</p>
 
@@ -634,7 +677,7 @@ function promptModalHtml(genre, card, allCards, draftPrompt, doneSteps) {
   `;
 }
 
-function bindPromptModal(root, genre, card, onNext, onClose) {
+function bindPromptModal(root, genre, card, state, onNext, onClose) {
   root.querySelectorAll('[data-close="1"]').forEach((el) => {
     el.addEventListener('click', (e) => {
       if (el.classList.contains('ws-modal-backdrop') && e.target !== el) return;
@@ -657,6 +700,35 @@ function bindPromptModal(root, genre, card, onNext, onClose) {
     });
   });
 
+  root.querySelectorAll('.ws-asset-card').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const slot = btn.dataset.slot;
+      const optionId = btn.dataset.optionId;
+      const previous = resolveChoiceOption(genre.id, slot, state.assetSelections[slot]);
+      const selected = resolveChoiceOption(genre.id, slot, optionId);
+      const oldDefault = applyAssetPlaceholders(card.data.prompt || '', genre.id, state.assetSelections);
+      state.assetSelections[slot] = optionId;
+      saveAssetSelections(genre.id, state.assetSelections);
+
+      const picker = btn.closest('.ws-asset-picker');
+      picker?.querySelectorAll('.ws-asset-card').forEach((el) => {
+        const on = el.dataset.optionId === optionId;
+        el.classList.toggle('is-selected', on);
+        el.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      if (textarea.value === oldDefault) {
+        textarea.value = applyAssetPlaceholders(card.data.prompt || '', genre.id, state.assetSelections);
+      } else if (previous && selected && previous.id !== selected.id) {
+        for (const field of ['path', 'label', 'promptExtra']) {
+          if (previous[field] && selected[field]) {
+            textarea.value = textarea.value.split(previous[field]).join(selected[field]);
+          }
+        }
+      }
+      saveDraft();
+    });
+  });
+
   root.querySelector('#ws-copy-prompt')?.addEventListener('click', async () => {
     const text = textarea.value;
     try {
@@ -676,7 +748,9 @@ function bindPromptModal(root, genre, card, onNext, onClose) {
     btn.addEventListener('click', () => {
       const hint = btn.dataset.hint || '';
       const cur = textarea.value.trimEnd();
-      textarea.value = cur ? `${cur}\n・${hint}` : `さっきのゲームに、つぎを追加して。\n・${hint}`;
+      textarea.value = cur
+        ? `${cur}\n・${hint}`
+        : `さっきのゲーム（いまの index.html）に、つぎを追加して。新しい HTML ファイルは作らないで。\n・${hint}`;
       saveDraft();
       textarea.focus();
       textarea.setSelectionRange(textarea.value.length, textarea.value.length);
@@ -691,7 +765,7 @@ function bindPromptModal(root, genre, card, onNext, onClose) {
     if (beforeExample === null) return;
     textarea.value = beforeExample;
     beforeExample = null;
-    try { sessionStorage.removeItem(undoKey); } catch (_) { /* storage unavailable */ }
+    removeStored(undoKey);
     undoExample.hidden = true;
     saveDraft();
     statusEl.hidden = false;
@@ -721,8 +795,8 @@ function bindPromptModal(root, genre, card, onNext, onClose) {
 }
 
 function loadDraft(genreId, cardId) {
-  try { return sessionStorage.getItem(`${STORAGE_KEYS.drafts}:${genreId}:${cardId}`); }
-  catch (_) { return null; }
+  const value = getStored(`${STORAGE_KEYS.drafts}:${genreId}:${cardId}`);
+  return value || null;
 }
 
 function bindStaffReset(container) {
@@ -734,7 +808,7 @@ function bindStaffReset(container) {
       <form method="dialog">
         <p class="ws-modal-badge">スタッフ用・クール交代</p>
         <h2>次の参加者を迎える準備</h2>
-        <p>このタブの<strong>名前・フォルダー情報・お願い文・素材の選択・確認チェック・進捗</strong>を全ジャンルまとめて消し、最初の画面に戻します。</p>
+        <p>このブラウザに残っている<strong>名前・フォルダー情報・お願い文・素材の選択・確認チェック・進捗</strong>を全ジャンルまとめて消し、最初の画面に戻します（タブを閉じても残る分も消します）。</p>
         <p>公開済みの作品は削除しません。PC内のファイルやAntigravityのチャット、クリップボードはこのボタンでは消えません。</p>
         <fieldset><legend>交代前の確認</legend>
           <label><input type="checkbox" required> 前の参加者の作品保存・公開URLの確認が済んでいる</label>
@@ -753,9 +827,7 @@ function bindStaffReset(container) {
       event.preventDefault();
       if (activeTransfers) return;
       try {
-        const prefixes = Object.values(STORAGE_KEYS);
-        const keys = Object.keys(sessionStorage).filter(key => prefixes.some(prefix => key === prefix || key.startsWith(`${prefix}:`)));
-        keys.forEach(key => sessionStorage.removeItem(key));
+        clearWorkshopStorage();
       } catch (_) {
         dialog.querySelector('.ws-reset-status').textContent = '初期化できませんでした。この体験用タブを閉じて、新しいタブで開き直してください。';
         return;
@@ -768,7 +840,19 @@ function bindStaffReset(container) {
   });
 }
 
-/* ── session helpers ── */
+/* ── persistent workshop storage (localStorage; staff reset clears) ── */
+
+function isWorkshopKey(key) {
+  return Object.values(STORAGE_KEYS).some((prefix) => key === prefix || key.startsWith(`${prefix}:`));
+}
+
+function clearWorkshopStorage() {
+  const stores = [WORKSHOP_STORE, typeof sessionStorage !== 'undefined' ? sessionStorage : null].filter(Boolean);
+  for (const store of stores) {
+    const keys = Object.keys(store).filter(isWorkshopKey);
+    keys.forEach((key) => store.removeItem(key));
+  }
+}
 
 function doneKey(genreId) {
   return `${STORAGE_KEYS.done}:${genreId}`;
@@ -776,7 +860,7 @@ function doneKey(genreId) {
 
 function loadDoneSteps(genreId) {
   try {
-    const raw = sessionStorage.getItem(doneKey(genreId));
+    const raw = getStored(doneKey(genreId));
     return new Set(raw ? JSON.parse(raw) : []);
   } catch (_) {
     return new Set();
@@ -784,9 +868,26 @@ function loadDoneSteps(genreId) {
 }
 
 function saveDoneSteps(genreId, set) {
+  setStored(doneKey(genreId), JSON.stringify([...set]));
+}
+
+function assetKey(genreId) {
+  return `${STORAGE_KEYS.assets}:${genreId}`;
+}
+
+function loadAssetSelections(genreId) {
+  const defaults = defaultAssetSelections(genreId);
   try {
-    sessionStorage.setItem(doneKey(genreId), JSON.stringify([...set]));
-  } catch (_) { /* ignore */ }
+    const raw = getStored(assetKey(genreId));
+    if (!raw) return defaults;
+    return { ...defaults, ...JSON.parse(raw) };
+  } catch (_) {
+    return defaults;
+  }
+}
+
+function saveAssetSelections(genreId, selections) {
+  setStored(assetKey(genreId), JSON.stringify(selections));
 }
 
 function folderForGenre(genreId) {
@@ -804,7 +905,18 @@ function folderForGenre(genreId) {
 
 function getStored(key) {
   try {
-    return sessionStorage.getItem(key) || '';
+    if (WORKSHOP_STORE) {
+      const local = WORKSHOP_STORE.getItem(key);
+      if (local != null) return local;
+    }
+    // 旧 sessionStorage からの移行
+    const legacy = sessionStorage.getItem(key);
+    if (legacy != null) {
+      setStored(key, legacy);
+      try { sessionStorage.removeItem(key); } catch (_) { /* ignore */ }
+      return legacy;
+    }
+    return '';
   } catch (_) {
     return '';
   }
@@ -812,7 +924,15 @@ function getStored(key) {
 
 function setStored(key, value) {
   try {
-    sessionStorage.setItem(key, value);
+    if (WORKSHOP_STORE) WORKSHOP_STORE.setItem(key, value);
+    else sessionStorage.setItem(key, value);
+  } catch (_) { /* ignore */ }
+}
+
+function removeStored(key) {
+  try {
+    WORKSHOP_STORE?.removeItem(key);
+    sessionStorage.removeItem(key);
   } catch (_) { /* ignore */ }
 }
 

@@ -1,4 +1,4 @@
-import { supabase } from '../supabase.js';
+import { normalizeSupabaseUrl, supabase } from '../supabase.js';
 
 /**
  * ④ Session Page — Game previews grid
@@ -28,7 +28,7 @@ export function renderSession(container, params) {
  * Build the base URL for a game's storage directory
  */
 function getGameBaseUrl(storagePath) {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseUrl = normalizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL);
   return `${supabaseUrl}/storage/v1/object/public/game-files/${storagePath}/`;
 }
 

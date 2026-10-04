@@ -58,6 +58,17 @@ export function preloadWorkshopEntryAssets() {
   return preloadPromise;
 }
 
+function opt(genreId, id, label, file, extra = {}) {
+  return {
+    id,
+    label,
+    file,
+    path: `./assets/${file}`,
+    preview: workshopThumbUrl(genreId, file),
+    ...extra,
+  };
+}
+
 export const WORKSHOP_ASSET_CATALOG = {
   shooting: {
     files: [
@@ -68,6 +79,18 @@ export const WORKSHOP_ASSET_CATALOG = {
       'enemy_purple.png',
       'enemy_orange.png',
     ],
+    choices: {
+      ship: {
+        stepId: 'step1',
+        label: 'どの宇宙船にする？',
+        slot: 'ship',
+        options: [
+          opt('shooting', 'ship_blue', 'あおのロケット', 'ship_blue.png'),
+          opt('shooting', 'ship_pink', 'ピンクのロケット', 'ship_pink.png'),
+          opt('shooting', 'ship_green', 'みどりのロケット', 'ship_green.png'),
+        ],
+      },
+    },
   },
   athletic: {
     files: [
@@ -79,6 +102,18 @@ export const WORKSHOP_ASSET_CATALOG = {
       'goal.png',
       'coin.png',
     ],
+    choices: {
+      player: {
+        stepId: 'step1',
+        label: 'どのキャラにする？',
+        slot: 'player',
+        options: [
+          opt('athletic', 'player_boy', 'ぼうや', 'player_boy.png'),
+          opt('athletic', 'player_girl', 'おんなのこ', 'player_girl.png'),
+          opt('athletic', 'player_robot', 'ロボット', 'player_robot.png'),
+        ],
+      },
+    },
   },
   puzzle: {
     files: [
@@ -89,11 +124,58 @@ export const WORKSHOP_ASSET_CATALOG = {
       'block_purple.png',
       'block_gray.png',
     ],
+    choices: {},
   },
 };
 
 export function getAssetCatalog(genreId) {
   return WORKSHOP_ASSET_CATALOG[genreId] || null;
+}
+
+export function getChoicesForStep(genreId, stepId) {
+  const catalog = getAssetCatalog(genreId);
+  if (!catalog?.choices) return [];
+  return Object.values(catalog.choices).filter((c) => c.stepId === stepId);
+}
+
+export function defaultAssetSelections(genreId) {
+  const catalog = getAssetCatalog(genreId);
+  const out = {};
+  if (!catalog?.choices) return out;
+  for (const choice of Object.values(catalog.choices)) {
+    out[choice.slot] = choice.options[0]?.id || null;
+  }
+  return out;
+}
+
+export function resolveChoiceOption(genreId, slot, optionId) {
+  const catalog = getAssetCatalog(genreId);
+  const choice = catalog?.choices?.[slot];
+  if (!choice) return null;
+  return choice.options.find((o) => o.id === optionId) || choice.options[0] || null;
+}
+
+/** プロンプト内の {{ship}} 等を選択結果で置換 */
+export function applyAssetPlaceholders(prompt, genreId, selections) {
+  let text = String(prompt || '');
+  const catalog = getAssetCatalog(genreId);
+  if (!catalog?.choices) return text;
+
+  for (const choice of Object.values(catalog.choices)) {
+    const selected = resolveChoiceOption(genreId, choice.slot, selections?.[choice.slot]);
+    if (!selected) continue;
+    text = text.split(`{{${choice.slot}}}`).join(selected.path);
+    text = text.split(`{{${choice.slot}Label}}`).join(selected.label);
+    const extra = selected.promptExtra || '';
+    text = text.split(`{{${choice.slot}Extra}}`).join(extra ? `・${extra}` : '');
+  }
+
+  return text
+    .replace(/\n{3,}/g, '\n\n')
+    .split('\n')
+    .filter((line) => line.trim() !== '')
+    .join('\n')
+    .trim();
 }
 
 export function listStarterAssetFiles(genreId) {

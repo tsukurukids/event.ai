@@ -1,4 +1,4 @@
-import { supabase } from '../supabase.js';
+import { normalizeSupabaseUrl, supabase } from '../supabase.js';
 
 /**
  * Storage パスの各セグメントを URL エンコード（日本語ファイル名対応）
@@ -12,7 +12,7 @@ export function encodeStoragePath(path) {
 }
 
 export function getGameBaseUrl(storagePath) {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseUrl = normalizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL);
   return `${supabaseUrl}/storage/v1/object/public/game-files/${encodeStoragePath(storagePath)}/`;
 }
 

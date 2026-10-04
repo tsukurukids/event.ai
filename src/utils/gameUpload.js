@@ -130,6 +130,69 @@ function shouldSkipFile(relativePath) {
   return false;
 }
 
+function dirnamePath(path) {
+  const parts = String(path || '').replace(/\\/g, '/').split('/').filter(Boolean);
+  parts.pop();
+  return parts.join('/');
+}
+
+function basenameLower(path) {
+  const parts = String(path || '').replace(/\\/g, '/').split('/').filter(Boolean);
+  return (parts[parts.length - 1] || '').toLowerCase();
+}
+
+function isIndexHtmlPath(path) {
+  const base = basenameLower(path);
+  return base === 'index.html' || base === 'index.htm';
+}
+
+/** prefix 配下なら相対パス、外なら null（prefix 空ならそのまま） */
+function stripDirPrefix(path, prefix) {
+  const p = String(path || '').replace(/\\/g, '/');
+  const pre = String(prefix || '').replace(/\\/g, '/').replace(/\/+$/, '');
+  if (!pre) return p;
+  if (p === pre) return '';
+  if (p.startsWith(`${pre}/`)) return p.slice(pre.length + 1);
+  return null;
+}
+
+/** いちばん浅い index.html をゲームの入口にする */
+function pickEntryIndex(prepared) {
+  const indexes = prepared.filter((e) => isIndexHtmlPath(e.safe) || isIndexHtmlPath(e.relative));
+  if (!indexes.length) return null;
+  indexes.sort((a, b) => {
+    const da = a.safe.split('/').filter(Boolean).length;
+    const db = b.safe.split('/').filter(Boolean).length;
+    if (da !== db) return da - db;
+    return a.safe.length - b.safe.length;
+  });
+  return indexes[0];
+}
+
+/**
+ * index.html のあるフォルダをルートに揃える
+ * （親フォルダを選んでも、ネストしていてもアップロード可能にする）
+ */
+function rerootAroundIndex(prepared) {
+  const entry = pickEntryIndex(prepared);
+  if (!entry) return { entries: null, error: 'フォルダのどこかに index.html が必要です' };
+
+  const dirSafe = dirnamePath(entry.safe);
+  const dirRel = dirnamePath(entry.relative);
+  const remapped = [];
+  for (const item of prepared) {
+    const safe = stripDirPrefix(item.safe, dirSafe);
+    const relative = stripDirPrefix(item.relative, dirRel);
+    if (safe == null || relative == null || !safe) continue;
+    remapped.push({ ...item, safe, relative });
+  }
+
+  if (!remapped.some((e) => isIndexHtmlPath(e.safe))) {
+    return { entries: null, error: 'フォルダのどこかに index.html が必要です' };
+  }
+  return { entries: remapped, error: null };
+}
+
 function buildWorkshopStoragePath() {
   const id = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
   return `workshop/${id}`;
@@ -187,14 +250,14 @@ export async function uploadWorkshopGameFolder({
     throw new Error('アップロードできるファイルが見つかりません。フォルダを選び直してください。');
   }
 
-  const hasIndex = prepared.some((e) => e.safe.toLowerCase() === 'index.html');
-  if (!hasIndex) {
-    throw new Error('フォルダの中（いちばん上）に index.html が必要です');
+  const { entries: rooted, error: rootError } = rerootAroundIndex(prepared);
+  if (rootError || !rooted?.length) {
+    throw new Error(rootError || 'フォルダのどこかに index.html が必要です');
   }
 
   // 同じ安全パスがぶつかる場合は後勝ち（稀）
   const bySafe = new Map();
-  for (const entry of prepared) bySafe.set(entry.safe, entry);
+  for (const entry of rooted) bySafe.set(entry.safe, entry);
   const entries = [...bySafe.values()];
 
   onProgress({ percent: 2, text: '公開の準備中…' });
@@ -233,11 +296,15 @@ export async function uploadWorkshopGameFolder({
 
   if (failed.length > 0) {
     const sample = failed.slice(0, 3).map((f) => `${f.safe}: ${f.message}`).join('\n');
-    const hint = /row-level security|RLS|policy|403|Unauthorized|JWT/i.test(sample)
-      ? '\n（Storage の workshop 用アップロード権限を確認してください）'
-      : /InvalidKey|invalid.*key/i.test(sample)
-        ? '\n（ファイル名に使えない文字があります。別フォルダで試してください）'
-        : '';
+    const hint = /Bucket not found|NoSuchBucket/i.test(sample)
+      ? '\n（Supabase Storage に public バケット「game-files」がありません。Dashboard → Storage で作成してください）'
+      : /Failed to fetch|NetworkError|Load failed/i.test(sample)
+        ? '\n（通信エラーです。ネット接続・Supabase URL、または「game-files」バケットの有無を確認してください）'
+      : /row-level security|RLS|policy|403|Unauthorized|JWT/i.test(sample)
+        ? '\n（Storage の workshop 用アップロード権限を確認してください）'
+        : /InvalidKey|invalid.*key/i.test(sample)
+          ? '\n（ファイル名に使えない文字があります。別フォルダで試してください）'
+          : '';
     throw new Error(
       `一部のファイルを送信できませんでした（${failed.length}/${total}件失敗）。\n${sample}${hint}`
     );
