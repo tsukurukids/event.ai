@@ -193,9 +193,17 @@ function rerootAroundIndex(prepared) {
   return { entries: remapped, error: null };
 }
 
-function buildWorkshopStoragePath() {
+function buildStoragePath(prefix) {
   const id = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
-  return `workshop/${id}`;
+  return `${prefix}/${id}`;
+}
+
+function buildWorkshopStoragePath() {
+  return buildStoragePath('workshop');
+}
+
+function buildAdminStoragePath() {
+  return buildStoragePath('admin');
 }
 
 async function uploadOne(filePath, body, contentType) {
@@ -339,6 +347,162 @@ export async function uploadWorkshopGameFolder({
 
   onProgress({ percent: 100, text: '完了！' });
   return game;
+}
+
+/**
+ * 管理者がギャラリーへ追加する作品（期限なし・admin/ 配下）
+ */
+export async function uploadAdminGameFolder({
+  files,
+  title,
+  genreId,
+  onProgress = () => {},
+}) {
+  if (!files?.length) throw new Error('フォルダを選んでください');
+
+  if (!['athletic', 'shooting', 'puzzle'].includes(genreId)) {
+    throw new Error('ジャンルを選び直してください');
+  }
+
+  const prepared = [];
+  for (const file of files) {
+    const relative = getStorageRelativePath(file);
+    if (shouldSkipFile(relative)) continue;
+    const safe = safeRelativePath(relative);
+    if (!safe) continue;
+    prepared.push({ file, relative, safe });
+  }
+
+  if (!prepared.length) {
+    throw new Error('アップロードできるファイルが見つかりません。フォルダを選び直してください。');
+  }
+
+  const { entries: rooted, error: rootError } = rerootAroundIndex(prepared);
+  if (rootError || !rooted?.length) {
+    throw new Error(rootError || 'フォルダのどこかに index.html が必要です');
+  }
+
+  const bySafe = new Map();
+  for (const entry of rooted) bySafe.set(entry.safe, entry);
+  const entries = [...bySafe.values()];
+
+  onProgress({ percent: 2, text: '公開の準備中…' });
+  const storagePath = buildAdminStoragePath();
+  const replacements = buildPathReplacements(entries.map((e) => e.relative));
+
+  const failed = [];
+  let uploaded = 0;
+  const total = entries.length;
+
+  for (const { file, safe } of entries) {
+    const filePath = `${storagePath}/${safe}`;
+    const contentType = detectContentType(safe);
+    let body = file;
+    try {
+      if (replacements.length > 0 && isTextFile(safe)) {
+        const text = await file.text();
+        body = new Blob([rewriteTextContent(text, replacements)], { type: contentType });
+      }
+      const error = await uploadOne(filePath, body, contentType);
+      if (error) {
+        console.error('[admin upload]', filePath, error);
+        failed.push({ safe, message: error.message || String(error) });
+      }
+    } catch (err) {
+      console.error('[admin upload]', filePath, err);
+      failed.push({ safe, message: err.message || String(err) });
+    }
+
+    uploaded += 1;
+    onProgress({
+      percent: Math.min(95, Math.round((uploaded / total) * 90) + 5),
+      text: `${uploaded}/${total} ファイル送信中…`,
+    });
+  }
+
+  if (failed.length > 0) {
+    const sample = failed.slice(0, 3).map((f) => `${f.safe}: ${f.message}`).join('\n');
+    throw new Error(
+      `一部のファイルを送信できませんでした（${failed.length}/${total}件失敗）。\n${sample}`
+    );
+  }
+
+  const gameTitle = (title || getFolderNameFromFiles(files) || 'ギャラリー作品').slice(0, 80);
+
+  onProgress({ percent: 96, text: 'ギャラリーに登録中…' });
+  const { data: game, error: insertError } = await supabase
+    .from('games')
+    .insert({
+      session_id: null,
+      genre_id: genreId,
+      title: gameTitle,
+      storage_path: storagePath,
+      entry_file: 'index.html',
+      is_published: true,
+      sort_order: 0,
+      expires_at: null,
+    })
+    .select('id, title, storage_path, expires_at, genre_id, uploaded_at')
+    .single();
+
+  if (insertError || !game) {
+    console.error('[admin upload] insert', insertError);
+    throw new Error(
+      'ファイルは送れましたが、ギャラリー登録に失敗しました。\n' +
+        (insertError?.message || '管理者の games 権限（Auth manage）を確認してください')
+    );
+  }
+
+  onProgress({ percent: 100, text: '完了！' });
+  return game;
+}
+
+async function listStorageFiles(prefix) {
+  const results = [];
+  async function walk(path) {
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await supabase.storage.from('game-files').list(path, {
+        limit: 1000,
+        offset,
+        sortBy: { column: 'name', order: 'asc' },
+      });
+      if (error) throw new Error('Storage のファイル一覧を取得できませんでした');
+      for (const item of data || []) {
+        const fullPath = `${path}/${item.name}`;
+        if (item.id === null) await walk(fullPath);
+        else results.push(fullPath);
+      }
+      if (!data || data.length < 1000) break;
+    }
+  }
+  await walk(prefix);
+  return results;
+}
+
+/**
+ * games 行と Storage 上のファイルをまとめて削除
+ */
+export async function deleteGameWithFiles(game) {
+  if (!game?.id) throw new Error('作品が指定されていません');
+
+  const storagePath = String(game.storage_path || '').replace(/\/+$/, '');
+  if (storagePath) {
+    const files = await listStorageFiles(storagePath);
+    for (let i = 0; i < files.length; i += 100) {
+      const chunk = files.slice(i, i + 100);
+      const { error } = await supabase.storage.from('game-files').remove(chunk);
+      if (error) {
+        console.error('[admin delete] storage', error);
+        throw new Error(`Storage の削除に失敗しました: ${error.message || error}`);
+      }
+    }
+  }
+
+  const { error: deleteError } = await supabase.from('games').delete().eq('id', game.id);
+  if (deleteError) {
+    console.error('[admin delete] games', deleteError);
+    throw new Error(`ギャラリーからの削除に失敗しました: ${deleteError.message || deleteError}`);
+  }
 }
 
 export function buildPlayUrl(gameId) {

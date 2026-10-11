@@ -41,15 +41,17 @@ function starterIndexHtml(folderName, genre) {
   <title>${safeFolder}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
     body {
       min-height: 100vh;
+      min-height: 100dvh;
       display: grid;
       place-items: center;
       font-family: "Hiragino Maru Gothic ProN", "M PLUS Rounded 1c", sans-serif;
       background: linear-gradient(160deg, #fff8f0, #e8d5f5 50%, #a8d8f0);
       color: #3d2c3e;
       text-align: center;
-      padding: 1.5rem;
+      padding: 1rem;
     }
     .card {
       background: rgba(255,255,255,0.9);
@@ -70,6 +72,7 @@ function starterIndexHtml(folderName, genre) {
     <p>ここはスタート用のフォルダです。<br>
     Antigravity でこのフォルダを開いて、<br>
     AIと一緒に <strong>${safeLabel}</strong> ゲームを作ろう！</p>
+    <p style="margin-top:0.75rem;">スマホのたて画面（360×640）で遊ぶゲームにしよう。</p>
     <p style="margin-top:1rem;font-size:0.9rem;">画像は <code>assets/</code> に入っています。</p>
   </div>
 </body>
@@ -122,6 +125,7 @@ export async function downloadNamedStarterZip({ participantName, genre }) {
       '',
       'このフォルダの画像をゲームで使います。',
       'プロンプトに書いてあるパス（例: ./assets/ship_blue.png）をそのままでOK。',
+      'ゲームはスマホのたて画面（canvas 360×640）で遊ぶ想定です。',
       '',
       '入っているファイル:',
       ...files.map((f) => `- ${f}`),

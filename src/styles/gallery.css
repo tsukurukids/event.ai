@@ -69,9 +69,23 @@
 .gallery-save p { font-size: 16px; line-height: 1.7; margin: 6px 0 0; }
 .gallery-save button { flex-shrink: 0; }
 .gallery-download-status, .gallery-play-hint { font-size: 16px; line-height: 1.7; margin: 12px 0; }
-.gallery-play .play-frame { width: 100%; min-height: 500px; height: 65vh; border: 1px solid #b9c6d3; border-radius: 12px; background: white; }
+.gallery-play-phone {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 4px;
+}
+.gallery-play .play-frame {
+  width: min(100%, 22rem, calc(78vh * 9 / 16));
+  aspect-ratio: 9 / 16;
+  height: auto;
+  min-height: 0;
+  border: 8px solid #20334b;
+  border-radius: 28px;
+  background: #111;
+  display: block;
+}
 .gallery-shell :is(a,button):focus-visible { outline: 3px solid #2368c4; outline-offset: 4px; }
-@media(max-width:700px) { .gallery-play { padding: 16px; } .gallery-play-header,.gallery-save { flex-direction: column; align-items: stretch; } .gallery-play-header h1 { font-size: 24px; } }
+@media(max-width:700px) { .gallery-play { padding: 16px; } .gallery-play-header,.gallery-save { flex-direction: column; align-items: stretch; } .gallery-play-header h1 { font-size: 24px; } .gallery-play .play-frame { width: min(100%, calc(72vh * 9 / 16)); border-width: 6px; border-radius: 22px; } }
 
 body.gallery-surface { background: linear-gradient(140deg, #fffdf6 25%, #edf7ff 100%); }
 .gallery-surface .wave-bg { display: none; }
