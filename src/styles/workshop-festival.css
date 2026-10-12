@@ -1697,16 +1697,28 @@
 .ws-entry-actions button, .ws-demo button { font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; border: 2px solid #193653; border-radius: 12px; padding: 12px; background: white; color: #193653; }
 .ws-entry-actions button { flex: 1; }
 .ws-entry-actions [data-create-genre], .ws-demo [data-create] { background: #ffe477; }
-.ws-demo { margin: auto; width: min(420px, calc(100% - 24px)); max-height: 96dvh; overflow: auto; border: 2px solid #193653; border-radius: 22px; padding: 20px; background: #fffdf5; color: #193653; }
+.ws-demo { margin: auto; max-height: 96dvh; overflow: auto; border: 2px solid #193653; border-radius: 22px; padding: 20px; background: #fffdf5; color: #193653; }
+.ws-demo--portrait { width: min(420px, calc(100% - 24px)); }
+.ws-demo--landscape { width: min(820px, calc(100% - 24px)); }
 .ws-demo::backdrop { background: #14254699; backdrop-filter: blur(4px); }
 .ws-demo header, .ws-demo footer, .ws-demo-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .ws-demo h2 { font-size: 24px; margin: 0; }
 .ws-demo header p { margin: 0 0 4px; font-size: 15px; }
 .ws-demo-help, .ws-demo-status { font-size: 16px; line-height: 1.6; margin: 10px 0; }
-.ws-demo-phone { display: flex; justify-content: center; }
-.ws-demo canvas { display: block; height: min(52dvh, 460px); width: auto; max-width: 100%; aspect-ratio: 9 / 16; object-fit: contain; border-radius: 18px; border: 6px solid #193653; background: #111; }
+.ws-demo-stage { display: flex; justify-content: center; }
+.ws-demo canvas { display: block; object-fit: contain; border-radius: 18px; border: 6px solid #193653; background: #111; max-width: 100%; }
+.ws-demo--portrait canvas { height: min(52dvh, 460px); width: auto; aspect-ratio: 9 / 16; }
+.ws-demo--landscape canvas { width: min(100%, 76dvh); height: auto; aspect-ratio: 2 / 1; }
 .ws-demo canvas:focus-visible { outline: 3px solid #367fd1; outline-offset: 3px; }
 .ws-demo-controls { justify-content: center; margin: 12px 0; }
 .ws-demo-controls button { touch-action: none; min-width: 72px; min-height: 56px; }
 .ws-demo footer { border-top: 1px solid #d8d8cf; padding-top: 16px; }
-@media(max-width:700px) { .ws-entry-actions { grid-column: 1/-1; } .ws-demo { padding: 14px; width: min(100% - 16px, 420px); } .ws-demo footer { flex-wrap: wrap; } .ws-demo canvas { height: min(48dvh, 420px); border-width: 5px; } }
+@media(max-width:700px) {
+  .ws-entry-actions { grid-column: 1/-1; }
+  .ws-demo { padding: 14px; }
+  .ws-demo--portrait { width: min(100% - 16px, 420px); }
+  .ws-demo--landscape { width: min(100% - 16px, 820px); }
+  .ws-demo footer { flex-wrap: wrap; }
+  .ws-demo--portrait canvas { height: min(48dvh, 420px); border-width: 5px; }
+  .ws-demo--landscape canvas { width: min(100%, 70dvh); border-width: 5px; }
+}

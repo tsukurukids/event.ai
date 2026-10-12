@@ -4,10 +4,23 @@
  */
 
 const COMMON_RULES =
-  'ルール：既存の index.html だけを編集（新しいHTMLは作らない） ／ 画像生成はしない ／ HTML・CSS・JSだけで作る ／ スマホのたて画面・タッチ操作で遊ぶ ／ わからなければスタッフへ';
+  'ルール：既存の index.html だけを編集（新しいHTMLは作らない） ／ 画像生成はしない ／ HTML・CSS・JSだけで作る ／ スマホでタッチ操作して遊ぶ ／ わからなければスタッフへ';
 
-/** Step1でゲームの土台をスマホ前提にする指示 */
-const MOBILE_CANVAS = [
+/** アスレチック・シューティング：スマホ横画面 */
+const LANDSCAPE_CANVAS = [
+  '重要：スマホの横画面で指だけで遊ぶゲームにして（PCでも同じ横長のまま表示）',
+  '・canvasサイズは必ず横640・縦360にして、画面の中央にできるだけ大きく表示して',
+  '・htmlとbodyは余白なし。たて長の画面やキーボード専用の操作にはしない',
+  '・canvasが画面からはみ出さないように、幅100%・高さは横長のまま縮小して',
+  '・画面の下に大きなタッチボタンを置いて、指だけで遊べるようにして（高さ56px以上・押しやすい間隔）',
+  '・キーボード（矢印・スペース）でも同じ操作ができたらうれしい（なくても指だけで遊べること）',
+].join('\n');
+
+const LANDSCAPE_KEEP =
+  '守ること：canvasは横640・縦360のまま。画面下のタッチボタンは消さない・小さくしない。たて長画面やキー操作だけのゲームに変えない。';
+
+/** パズル：スマホたて画面 */
+const PORTRAIT_CANVAS = [
   '重要：スマホのたて画面で指だけで遊ぶゲームにして（PCでも同じたて長のまま表示）',
   '・canvasサイズは必ず横360・縦640にして、画面の中央にできるだけ大きく表示して',
   '・htmlとbodyは余白なし。横長の画面やキーボード専用の操作にはしない',
@@ -16,8 +29,7 @@ const MOBILE_CANVAS = [
   '・キーボード（矢印・スペース）でも同じ操作ができたらうれしい（なくても指だけで遊べること）',
 ].join('\n');
 
-/** Step2以降でAIがたて長やタッチボタンを消さないための短い固定文 */
-const MOBILE_KEEP =
+const PORTRAIT_KEEP =
   '守ること：canvasは横360・縦640のまま。画面下のタッチボタンは消さない・小さくしない。横長画面やキー操作だけのゲームに変えない。';
 
 const EDIT_INDEX =
@@ -26,71 +38,80 @@ const EDIT_INDEX =
 const CONTINUE_INDEX =
   'さっきのゲーム（いまの index.html）に、つぎを追加して。新しい HTML ファイルは作らないで。';
 
-const FREE_HINTS_COMMON = {
-  tips: [
-    '「さっきのゲーム（いまの index.html）に、つぎを追加して」から始めよう',
-    '新しい HTML は作らず、既存の index.html だけを書き換えてね',
-    '画像や絵を作るお願いはしない（「〇〇の画像を作って」はNG）',
-    'たて長（360×640）と画面下のタッチボタンは残したままアレンジしよう',
-  ],
-};
+function makeFreeHints(orientationTip) {
+  return {
+    tips: [
+      '「さっきのゲーム（いまの index.html）に、つぎを追加して」から始めよう',
+      '新しい HTML は作らず、既存の index.html だけを書き換えてね',
+      '画像や絵を作るお願いはしない（「〇〇の画像を作って」はNG）',
+      orientationTip,
+    ],
+  };
+}
 
-const FINISH_HINTS = {
-  shortTitle: 'かんせい！',
-  title: 'かんせいさせよう',
-  prompt: [
-    CONTINUE_INDEX,
-    MOBILE_KEEP,
-    '・タイトル「〇〇〇」を画面の真ん中に大きく表示して',
-    '・大きな「スタート」ボタンをタップしたらゲームが始まるようにして',
-    '・ゲームオーバーのときに大きな「もう一度」ボタンをつけて',
-    '・スタート画面でも、ゲーム中でも、タッチで遊べるままにして',
-  ].join('\n'),
-  checklist: [
-    'タイトル画面がある',
-    'スタートボタンをタップでゲームが始まる',
-    'もう一度ボタンで遊べる',
-    'たて長のまま・指で操作できる',
-  ],
-  tips: [
-    'タイトルは「 」で囲んで伝えよう',
-    '自分の名前を入れてもOK（例：たろうのシューティング）',
-    'スタート画面を足しても、下のタッチボタンは消さないでね',
-  ],
-  hintGroups: [
-    {
-      label: '仕上げでよくやること',
-      items: [
-        'タイトルを画面の真ん中に大きく表示して大きな「スタート」ボタンをつけて',
-        'ゲームオーバーのときに大きな「もう一度」ボタンをつけて',
-        'クリアしたときに「次のステージへ」ボタンをつけて',
-        '自分のゲームにタイトルをつけて画面に表示して',
-      ],
-    },
-  ],
-  examplePrompts: [
-    {
-      label: 'スタート画面をつける',
-      text: [
-        CONTINUE_INDEX,
-        MOBILE_KEEP,
-        '・タイトル「たのしいゲーム」を画面の真ん中に大きく表示して',
-        '・大きな「スタート」ボタンをタップしたらゲームが始まるようにして',
-        '・ゲームオーバーとクリアのときに大きな「もう一度」ボタンをつけて',
-      ].join('\n'),
-    },
-    {
-      label: '名前入りタイトル',
-      text: [
-        CONTINUE_INDEX,
-        MOBILE_KEEP,
-        '・タイトル「わたしのゲーム」を画面の真ん中に大きくかわいく表示して',
-        '・大きな「スタート」ボタンをタップしたらゲームが始まるようにして',
-        '・クリアしたときに「やったー！」と大きく表示して',
-      ].join('\n'),
-    },
-  ],
-};
+function makeFinishHints(keep, orientationCheck) {
+  return {
+    shortTitle: 'かんせい！',
+    title: 'かんせいさせよう',
+    prompt: [
+      CONTINUE_INDEX,
+      keep,
+      '・タイトル「〇〇〇」を画面の真ん中に大きく表示して',
+      '・大きな「スタート」ボタンをタップしたらゲームが始まるようにして',
+      '・ゲームオーバーのときに大きな「もう一度」ボタンをつけて',
+      '・スタート画面でも、ゲーム中でも、タッチで遊べるままにして',
+    ].join('\n'),
+    checklist: [
+      'タイトル画面がある',
+      'スタートボタンをタップでゲームが始まる',
+      'もう一度ボタンで遊べる',
+      orientationCheck,
+    ],
+    tips: [
+      'タイトルは「 」で囲んで伝えよう',
+      '自分の名前を入れてもOK（例：たろうのシューティング）',
+      'スタート画面を足しても、下のタッチボタンは消さないでね',
+    ],
+    hintGroups: [
+      {
+        label: '仕上げでよくやること',
+        items: [
+          'タイトルを画面の真ん中に大きく表示して大きな「スタート」ボタンをつけて',
+          'ゲームオーバーのときに大きな「もう一度」ボタンをつけて',
+          'クリアしたときに「次のステージへ」ボタンをつけて',
+          '自分のゲームにタイトルをつけて画面に表示して',
+        ],
+      },
+    ],
+    examplePrompts: [
+      {
+        label: 'スタート画面をつける',
+        text: [
+          CONTINUE_INDEX,
+          keep,
+          '・タイトル「たのしいゲーム」を画面の真ん中に大きく表示して',
+          '・大きな「スタート」ボタンをタップしたらゲームが始まるようにして',
+          '・ゲームオーバーとクリアのときに大きな「もう一度」ボタンをつけて',
+        ].join('\n'),
+      },
+      {
+        label: '名前入りタイトル',
+        text: [
+          CONTINUE_INDEX,
+          keep,
+          '・タイトル「わたしのゲーム」を画面の真ん中に大きくかわいく表示して',
+          '・大きな「スタート」ボタンをタップしたらゲームが始まるようにして',
+          '・クリアしたときに「やったー！」と大きく表示して',
+        ].join('\n'),
+      },
+    ],
+  };
+}
+
+const FREE_HINTS_LANDSCAPE = makeFreeHints('横長（640×360）と画面下のタッチボタンは残したままアレンジしよう');
+const FREE_HINTS_PORTRAIT = makeFreeHints('たて長（360×640）と画面下のタッチボタンは残したままアレンジしよう');
+const FINISH_HINTS_LANDSCAPE = makeFinishHints(LANDSCAPE_KEEP, '横長のまま・指で操作できる');
+const FINISH_HINTS_PORTRAIT = makeFinishHints(PORTRAIT_KEEP, 'たて長のまま・指で操作できる');
 
 export const WORKSHOP_MANUAL_STEPS = {
   shooting: [
@@ -101,7 +122,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       rules: COMMON_RULES,
       prompt: [
         EDIT_INDEX,
-        MOBILE_CANVAS,
+        LANDSCAPE_CANVAS,
         '・画面の背景は黒い宇宙にして星をたくさん散らばらせて',
         '・画像はPromise.allですべて読み込んでからゲームループを開始して',
         '読み込む画像：',
@@ -113,7 +134,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         '・「発射」を押すと宇宙船から弾がまっすぐ上に飛んでいくようにして',
       ].join('\n'),
       checklist: [
-        'たて長のスマホ画面になっている',
+        '横長のスマホ画面になっている',
         '宇宙船が画面の下に表示されている',
         '←→ボタンで宇宙船が動く',
         '発射ボタンで弾が上に飛んでいく',
@@ -121,7 +142,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       tips: [
         'Promise.allで画像を全部読み込んでからゲームを始めるのが大切！',
         '既存の index.html を書き換えると、次のステップへ内容が引き継がれるよ',
-        'まず「たて長＋下のタッチボタン」ができてから、見た目を増やそう',
+        'まず「横長＋下のタッチボタン」ができてから、見た目を増やそう',
       ],
     },
     {
@@ -131,26 +152,26 @@ export const WORKSHOP_MANUAL_STEPS = {
       rules: COMMON_RULES,
       prompt: [
         CONTINUE_INDEX,
-        MOBILE_KEEP,
+        LANDSCAPE_KEEP,
         '・画像はPromise.allですべて読み込んでからゲームループを開始して',
         '追加で読み込む画像：',
         '・./assets/enemy_green.png',
         'タイムスタンプをつけて読み込む',
-        '・画面の上に敵を3行×4列で12体並べて canvasのdrawImage()で表示して（たて長画面に収まる大きさ）',
+        '・画面の上に敵を3行×5列で15体並べて canvasのdrawImage()で表示して（横長画面に収まる大きさ）',
         '・敵はゆっくり左右に動いて端まで来たら少し下がって反対に進むようにして',
         '・自分の弾が敵に当たったらその敵が消えるようにして',
         '・敵もランダムに弾を下に向けて撃ってくるようにして',
         '・下の「←」「→」「発射」ボタンはそのまま使って遊べるようにして',
       ].join('\n'),
       checklist: [
-        '敵が12体ならんで表示されている',
+        '敵が15体ならんで表示されている',
         '敵が左右に動いている',
         '弾が当たったら敵が消える',
         '敵も弾を撃ってくる',
         'タッチボタンでまだ操作できる',
       ],
       tips: [
-        '敵の数は「3行×4列で12体」のように数字ではっきり伝えるとよいよ',
+        '敵の数は「3行×5列で15体」のように数字ではっきり伝えるとよいよ',
         '敵を足しても、下のタッチボタンは消さないでね',
       ],
     },
@@ -161,7 +182,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       rules: COMMON_RULES,
       prompt: [
         CONTINUE_INDEX,
-        MOBILE_KEEP,
+        LANDSCAPE_KEEP,
         '・敵を1体倒すたびにスコアが10点上がるようにして画面の上にスコアを表示して',
         '・自分の宇宙船はライフが3つあって敵の弾に当たるたびに1つ減るようにして',
         '・ライフを画面の上にハートマークで3つ表示して',
@@ -186,12 +207,12 @@ export const WORKSHOP_MANUAL_STEPS = {
       shortTitle: '自由にかえる',
       title: 'じぶんだけのゲームにしよう',
       rules: COMMON_RULES,
-      prompt: `${CONTINUE_INDEX}\n${MOBILE_KEEP}\n・`,
+      prompt: `${CONTINUE_INDEX}\n${LANDSCAPE_KEEP}\n・`,
       checklist: [
         '見た目かルールを1つ以上アレンジした',
-        'たて長とタッチボタンは残っている',
+        '横長とタッチボタンは残っている',
       ],
-      ...FREE_HINTS_COMMON,
+      ...FREE_HINTS_LANDSCAPE,
       hintGroups: [
         {
           label: '見た目を変える',
@@ -225,7 +246,7 @@ export const WORKSHOP_MANUAL_STEPS = {
           label: '例：見た目チェンジ',
           text: [
             CONTINUE_INDEX,
-            MOBILE_KEEP,
+            LANDSCAPE_KEEP,
             '・宇宙船を ./assets/ship_pink.png にかえて',
             '・敵を ./assets/enemy_orange.png にかえて',
             '・背景の星をもっとたくさん増やして',
@@ -235,7 +256,7 @@ export const WORKSHOP_MANUAL_STEPS = {
           label: '例：ボス出現',
           text: [
             CONTINUE_INDEX,
-            MOBILE_KEEP,
+            LANDSCAPE_KEEP,
             '・敵を全部倒したら大きなボスキャラを出して',
             '・ボスのライフは5にして',
             '・ボスを倒したら「クリア！」と大きく表示して',
@@ -245,7 +266,7 @@ export const WORKSHOP_MANUAL_STEPS = {
           label: '例：2連射',
           text: [
             CONTINUE_INDEX,
-            MOBILE_KEEP,
+            LANDSCAPE_KEEP,
             '・発射ボタンで弾を一度に2発撃てるようにして',
             '・弾を撃つときに短い音をつけて',
             '・敵を倒したときにキラキラエフェクトをつけて',
@@ -255,7 +276,7 @@ export const WORKSHOP_MANUAL_STEPS = {
     },
     {
       id: 'step5',
-      ...FINISH_HINTS,
+      ...FINISH_HINTS_LANDSCAPE,
       rules: COMMON_RULES,
     },
   ],
@@ -268,8 +289,8 @@ export const WORKSHOP_MANUAL_STEPS = {
       rules: COMMON_RULES,
       prompt: [
         EDIT_INDEX,
-        MOBILE_CANVAS,
-        '・たて長画面の横スクロールアクションゲームを作って（カメラがキャラクターを追う）',
+        LANDSCAPE_CANVAS,
+        '・横画面の横スクロールアクションゲームを作って（カメラがキャラクターを追う）',
         '・画像はPromise.allですべて読み込んでからゲームループを開始して',
         '読み込む画像：',
         '・{{player}}',
@@ -285,7 +306,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         '・重力をつけて自然に落ちてくるようにして',
       ].join('\n'),
       checklist: [
-        'たて長のスマホ画面になっている',
+        '横長のスマホ画面になっている',
         'キャラクターが地面の上に表示されている',
         '←→ボタンでキャラクターが動く',
         'ジャンプボタンでジャンプできる',
@@ -305,7 +326,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       rules: COMMON_RULES,
       prompt: [
         CONTINUE_INDEX,
-        MOBILE_KEEP,
+        LANDSCAPE_KEEP,
         '・画像はPromise.allですべて読み込んでからゲームループを開始して',
         '追加で読み込む画像：',
         '・./assets/block.png',
@@ -315,7 +336,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         '・キャラクターが右に動いているときは画像をそのまま表示して',
         '・キャラクターが左に動いているときは canvasのscale(-1, 1)で画像を左右反転して表示して',
         '・止まっているときは最後に動いた方向を向くようにして',
-        '・足場ブロックを3つ地面の上に置いてブロックの上に乗れるようにして（たて長画面でもジャンプしやすい位置）',
+        '・足場ブロックを3つ地面の上に置いてブロックの上に乗れるようにして',
         '・コースの右端にゴールのポールを置いてキャラクターがゴールに触れたら「ゴール！」と表示して',
         '・コインを5枚コース上に置いて触れたら消えるようにして拾った枚数を画面の上に表示して',
         '・下の「←」「→」「ジャンプ」ボタンはそのまま使って遊べるようにして',
@@ -339,7 +360,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       rules: COMMON_RULES,
       prompt: [
         CONTINUE_INDEX,
-        MOBILE_KEEP,
+        LANDSCAPE_KEEP,
         '・敵キャラクターを3体コース上に置いて左右にゆっくり動くようにして',
         '画像が読み込めない場合は茶色い四角で代替して',
         '・キャラクターが敵に当たったらライフが1つ減るようにして',
@@ -365,12 +386,12 @@ export const WORKSHOP_MANUAL_STEPS = {
       shortTitle: '自由にかえる',
       title: 'じぶんだけのゲームにしよう',
       rules: COMMON_RULES,
-      prompt: `${CONTINUE_INDEX}\n${MOBILE_KEEP}\n・`,
+      prompt: `${CONTINUE_INDEX}\n${LANDSCAPE_KEEP}\n・`,
       checklist: [
         '見た目かルールを1つ以上アレンジした',
-        'たて長とタッチボタンは残っている',
+        '横長とタッチボタンは残っている',
       ],
-      ...FREE_HINTS_COMMON,
+      ...FREE_HINTS_LANDSCAPE,
       hintGroups: [
         {
           label: '見た目を変える',
@@ -404,7 +425,7 @@ export const WORKSHOP_MANUAL_STEPS = {
           label: '例：見た目チェンジ',
           text: [
             CONTINUE_INDEX,
-            MOBILE_KEEP,
+            LANDSCAPE_KEEP,
             '・キャラクターを ./assets/player_girl.png にかえて',
             '・空の色を明るい水色にして',
             '・クリアしたときにファンファーレをつけて',
@@ -414,7 +435,7 @@ export const WORKSHOP_MANUAL_STEPS = {
           label: '例：コイン増量',
           text: [
             CONTINUE_INDEX,
-            MOBILE_KEEP,
+            LANDSCAPE_KEEP,
             '・コインの数を10枚に増やして',
             '・コインを取ったときに音をつけて',
             '・空の色を明るい水色にして',
@@ -424,7 +445,7 @@ export const WORKSHOP_MANUAL_STEPS = {
           label: '例：むずかしく',
           text: [
             CONTINUE_INDEX,
-            MOBILE_KEEP,
+            LANDSCAPE_KEEP,
             '・敵の動くスピードを速くして',
             '・穴を2つ増やして',
             '・ジャンプの高さを少し高くして',
@@ -434,7 +455,7 @@ export const WORKSHOP_MANUAL_STEPS = {
     },
     {
       id: 'step5',
-      ...FINISH_HINTS,
+      ...FINISH_HINTS_LANDSCAPE,
       rules: COMMON_RULES,
     },
   ],
@@ -447,7 +468,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       rules: COMMON_RULES,
       prompt: [
         EDIT_INDEX,
-        MOBILE_CANVAS,
+        PORTRAIT_CANVAS,
         '重要：いまは「落とす・止める」だけ。消える・スコア・次の予告・ゲームオーバー・タイトル画面は絶対に作らない。',
         '・マス目は6列×8行、1マスは45×45ピクセルにして、盤面を画面の中央に置く',
         '・薄いグレーのマス目線だけ描いて、背景はうすい水色にして',
@@ -487,7 +508,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       rules: COMMON_RULES,
       prompt: [
         CONTINUE_INDEX,
-        MOBILE_KEEP,
+        PORTRAIT_KEEP,
         'ほかの機能は増やさないで。',
         '・同じ色のブロックが上下左右に「3つ以上」つながったら消えるようにして（斜めはなし）',
         '・消えたあとに、上にあったブロックが下に落ちるようにして',
@@ -515,7 +536,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       rules: COMMON_RULES,
       prompt: [
         CONTINUE_INDEX,
-        MOBILE_KEEP,
+        PORTRAIT_KEEP,
         '・ブロックを1個消すたびにスコアが10点増えるようにして',
         '・続けて2回以上消えたらボーナスで+20点して',
         '・スコアを画面の上に大きく表示して',
@@ -543,12 +564,12 @@ export const WORKSHOP_MANUAL_STEPS = {
       shortTitle: '自由にかえる',
       title: 'じぶんだけのゲームにしよう',
       rules: COMMON_RULES,
-      prompt: `${CONTINUE_INDEX}\n${MOBILE_KEEP}\n・`,
+      prompt: `${CONTINUE_INDEX}\n${PORTRAIT_KEEP}\n・`,
       checklist: [
         '見た目かルールを1つ以上アレンジした',
         'たて長とタッチボタンは残っている',
       ],
-      ...FREE_HINTS_COMMON,
+      ...FREE_HINTS_PORTRAIT,
       hintGroups: [
         {
           label: '見た目を変える',
@@ -580,7 +601,7 @@ export const WORKSHOP_MANUAL_STEPS = {
           label: '例：やさしくする',
           text: [
             CONTINUE_INDEX,
-            MOBILE_KEEP,
+            PORTRAIT_KEEP,
             '・落ちるスピードを少しゆっくりにして',
             '・背景の色をやわらかいピンクにして',
             '・消えたときにキラキラエフェクトをつけて',
@@ -590,7 +611,7 @@ export const WORKSHOP_MANUAL_STEPS = {
           label: '例：むずかしくする',
           text: [
             CONTINUE_INDEX,
-            MOBILE_KEEP,
+            PORTRAIT_KEEP,
             '・落ちるスピードをだんだん速くして',
             '・灰色ブロックが降るのをスコア50点からにして',
             '・4つ以上つながったときだけ消えるようにして',
@@ -600,7 +621,7 @@ export const WORKSHOP_MANUAL_STEPS = {
           label: '例：見た目チェンジ',
           text: [
             CONTINUE_INDEX,
-            MOBILE_KEEP,
+            PORTRAIT_KEEP,
             '・グリッドの線を水色にして',
             '・スコアの文字を大きくかわいくして',
             '・次のブロックの枠に「つぎ」と書いて',
@@ -610,7 +631,7 @@ export const WORKSHOP_MANUAL_STEPS = {
     },
     {
       id: 'step5',
-      ...FINISH_HINTS,
+      ...FINISH_HINTS_PORTRAIT,
       rules: COMMON_RULES,
     },
   ],

@@ -1,7 +1,11 @@
 import { workshopAssetUrl } from '../config/workshopAssets.js';
 
-const VW = 360;
-const VH = 640;
+const sizes = {
+  athletic: { w: 720, h: 360 },
+  shooting: { w: 720, h: 360 },
+  puzzle: { w: 360, h: 640 },
+};
+
 const configs = {
   athletic: { files: ['player_boy.png', 'ground.png', 'goal.png', 'coin.png'], help: '← → で移動、ジャンプで跳ぶ。コインを集めて旗へ！' },
   shooting: { files: ['ship_blue.png', 'enemy_green.png', 'enemy_purple.png'], help: '← → で移動、発射で撃つ。6体の敵を倒そう！' },
@@ -10,13 +14,15 @@ const configs = {
 
 export function openWorkshopDemo(genre, trigger) {
   const config = configs[genre.id];
+  const { w: VW, h: VH } = sizes[genre.id] || sizes.athletic;
+  const landscape = genre.id !== 'puzzle';
   const actionLabel = genre.id === 'athletic' ? 'ジャンプ' : genre.id === 'shooting' ? '発射' : '落とす';
   const dialog = document.createElement('dialog');
-  dialog.className = 'ws-demo';
+  dialog.className = `ws-demo ${landscape ? 'ws-demo--landscape' : 'ws-demo--portrait'}`;
   dialog.setAttribute('aria-labelledby', 'ws-demo-title');
   dialog.innerHTML = `<header><div><p>あそべる見本</p><h2 id="ws-demo-title">${genre.label}</h2></div><button type="button" data-close aria-label="見本を閉じる">×</button></header>
     <p class="ws-demo-help">${config.help}</p>
-    <div class="ws-demo-phone">
+    <div class="ws-demo-stage">
       <canvas width="${VW}" height="${VH}" tabindex="0" aria-label="${genre.label}の見本ゲーム。${config.help}"></canvas>
     </div>
     <p class="ws-demo-status" role="status">素材をよみこみ中…</p>
@@ -55,35 +61,28 @@ export function openWorkshopDemo(genre, trigger) {
 
   function reset() {
     keys.clear();
-    game = {
-      x: 40,
-      y: 500,
-      vy: 0,
-      grounded: true,
-      time: 0,
-      cooldown: 0,
-      score: 0,
-      won: false,
-      lost: false,
-      bullets: [],
-      coins: [
-        { x: 200, y: 382 },
-        { x: 400, y: 292 },
-        { x: 530, y: 512 },
-      ],
-      enemies: Array.from({ length: 6 }, (_, i) => ({
-        x: 40 + (i % 3) * 100,
-        y: 70 + Math.floor(i / 3) * 90,
-        alive: true,
-      })),
-      col: 2,
-      color: 0,
-      board: Array.from({ length: 8 }, () => Array(6).fill(-1)),
-    };
-    game.board[7][1] = 0;
-    game.board[7][2] = 0;
-    game.board[7][4] = 1;
-    game.board[7][5] = 1;
+    if (genre.id === 'puzzle') {
+      game = {
+        x: 0, y: 0, vy: 0, grounded: true, time: 0, cooldown: 0, score: 0, won: false, lost: false,
+        bullets: [], coins: [], enemies: [],
+        col: 2, color: 0,
+        board: Array.from({ length: 8 }, () => Array(6).fill(-1)),
+      };
+      game.board[7][1] = 0; game.board[7][2] = 0;
+      game.board[7][4] = 1; game.board[7][5] = 1;
+    } else {
+      game = {
+        x: 45, y: 260, vy: 0, grounded: true, time: 0, cooldown: 0, score: 0, won: false, lost: false,
+        bullets: [],
+        coins: [170, 340, 500],
+        enemies: Array.from({ length: 6 }, (_, i) => ({
+          x: 100 + i * 95,
+          y: 50 + (i % 2) * 42,
+          alive: true,
+        })),
+        col: 0, color: 0, board: [],
+      };
+    }
     status.textContent = '見本で遊んだら「このゲームをつくる」で始めよう。';
     canvas.focus();
   }
@@ -98,7 +97,7 @@ export function openWorkshopDemo(genre, trigger) {
   function action(key) {
     if (!ready || game.won || game.lost) return;
     if (genre.id === 'shooting' && key === 'Space' && game.cooldown <= 0) {
-      game.bullets.push({ x: game.x + 24, y: 510 });
+      game.bullets.push({ x: game.x + 25, y: 290 });
       game.cooldown = 0.2;
     }
     if (genre.id === 'puzzle') {
@@ -144,7 +143,7 @@ export function openWorkshopDemo(genre, trigger) {
         else status.textContent = remove.size ? `${remove.size}こ消えた！ あと${6 - game.score}こでクリア。` : '同じ色を3つ、縦か横にそろえよう。';
       }
     } else if (key === 'Space' && genre.id === 'athletic' && game.grounded) {
-      game.vy = -620;
+      game.vy = -510;
       game.grounded = false;
     }
   }
@@ -175,11 +174,8 @@ export function openWorkshopDemo(genre, trigger) {
     button.addEventListener('click', (e) => {
       if (e.detail === 0 && ready && !game.won && !game.lost) {
         action(button.dataset.key);
-        if (genre.id !== 'puzzle' && button.dataset.key === 'ArrowLeft') game.x = Math.max(0, game.x - 28);
-        if (genre.id !== 'puzzle' && button.dataset.key === 'ArrowRight') {
-          const maxX = genre.id === 'athletic' ? 672 : 300;
-          game.x = Math.min(maxX, game.x + 28);
-        }
+        if (genre.id !== 'puzzle' && button.dataset.key === 'ArrowLeft') game.x = Math.max(0, game.x - 35);
+        if (genre.id !== 'puzzle' && button.dataset.key === 'ArrowRight') game.x = Math.min(660, game.x + 35);
       }
     });
   });
@@ -229,28 +225,22 @@ export function openWorkshopDemo(genre, trigger) {
       g.time += dt;
       g.cooldown -= dt;
       if (genre.id !== 'puzzle') {
-        const maxX = genre.id === 'athletic' ? 672 : 300;
-        g.x = Math.max(0, Math.min(maxX, g.x + ((keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0)) * 280 * dt));
+        g.x = Math.max(0, Math.min(660, g.x + ((keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0)) * 280 * dt));
       }
       if (genre.id === 'athletic') {
         const oldY = g.y;
-        g.vy += 1450 * dt;
+        g.vy += 1250 * dt;
         g.y += g.vy * dt;
         g.grounded = false;
-        const platforms = [
-          [0, 560, 720],
-          [160, 430, 120],
-          [360, 340, 120],
-        ];
-        for (const p of platforms) {
-          if (g.vy >= 0 && oldY + 48 <= p[1] && g.y + 48 >= p[1] && g.x + 40 > p[0] && g.x + 8 < p[0] + p[2]) {
-            g.y = p[1] - 48;
+        for (const p of [[0, 310, 720], [235, 235, 115], [425, 190, 110]]) {
+          if (g.vy >= 0 && oldY + 50 <= p[1] && g.y + 50 >= p[1] && g.x + 42 > p[0] && g.x + 8 < p[0] + p[2]) {
+            g.y = p[1] - 50;
             g.vy = 0;
             g.grounded = true;
           }
         }
-        g.coins = g.coins.filter((coin) => {
-          if (Math.abs(g.x + 24 - coin.x) < 32 && Math.abs(g.y + 24 - coin.y) < 36) {
+        g.coins = g.coins.filter((x) => {
+          if (Math.abs(g.x + 25 - x) < 32 && Math.abs(g.y + 25 - 270) < 42) {
             g.score++;
             return false;
           }
@@ -260,14 +250,13 @@ export function openWorkshopDemo(genre, trigger) {
       }
       if (genre.id === 'shooting') {
         if (keys.has('Space') && g.cooldown <= 0) {
-          g.bullets.push({ x: g.x + 24, y: 510 });
+          g.bullets.push({ x: g.x + 25, y: 290 });
           g.cooldown = 0.2;
         }
         for (const b of g.bullets) {
-          b.y -= 480 * dt;
+          b.y -= 460 * dt;
           for (const e of g.enemies) {
-            const ex = e.x + Math.sin(g.time * 1.5) * 18;
-            if (e.alive && Math.abs(b.x - (ex + 24)) < 24 && Math.abs(b.y - (e.y + 24)) < 28) {
+            if (e.alive && Math.abs(b.x - (e.x + Math.sin(g.time * 1.5) * 35 + 25)) < 25 && Math.abs(b.y - (e.y + 25)) < 28) {
               e.alive = false;
               b.y = -100;
               g.score++;
@@ -280,22 +269,18 @@ export function openWorkshopDemo(genre, trigger) {
     }
 
     if (genre.id === 'athletic') {
-      const cam = Math.max(0, Math.min(360, g.x - 80));
-      ctx.save();
-      ctx.translate(-cam, 0);
-      for (let x = 0; x < 720; x += 72) sprite(1, x, 548, 80, 92);
+      for (let x = 0; x < 720; x += 80) sprite(1, x, 295, 85, 65);
       ctx.fillStyle = '#7cba77';
-      ctx.fillRect(160, 430, 120, 16);
-      ctx.fillRect(360, 340, 120, 16);
-      sprite(2, 640, 470, 72);
-      g.coins.forEach((coin) => sprite(3, coin.x - 14, coin.y - 14, 28));
-      sprite(0, g.x, g.y, 48);
-      ctx.restore();
+      ctx.fillRect(235, 235, 115, 15);
+      ctx.fillRect(425, 190, 110, 15);
+      sprite(2, 620, 222, 80);
+      g.coins.forEach((x) => sprite(3, x - 15, 255, 30));
+      sprite(0, g.x, g.y, 50);
     } else if (genre.id === 'shooting') {
       ctx.fillStyle = '#d5ecff';
-      for (let i = 0; i < 50; i++) ctx.fillRect((i * 97) % VW, (i * 73) % VH, 2, 2);
-      g.enemies.filter((e) => e.alive).forEach((e, i) => sprite(1 + (i % 2), e.x + Math.sin(g.time * 1.5) * 18, e.y, 48));
-      sprite(0, g.x, 520, 52);
+      for (let i = 0; i < 40; i++) ctx.fillRect((i * 137) % VW, (i * 73) % VH, 2, 2);
+      g.enemies.filter((e) => e.alive).forEach((e, i) => sprite(1 + (i % 2), e.x + Math.sin(g.time * 1.5) * 35, e.y, 50));
+      sprite(0, g.x, 285, 55);
       ctx.fillStyle = '#ffe46f';
       g.bullets.forEach((b) => ctx.fillRect(b.x - 3, b.y, 6, 16));
     } else {
@@ -325,14 +310,22 @@ export function openWorkshopDemo(genre, trigger) {
         : genre.id === 'athletic'
           ? `コイン ${g.score} / 3`
           : `消した数 ${g.score} / 6`;
-    ctx.fillText(scoreText, 16, 32);
+    ctx.fillText(scoreText, 16, 28);
     if (g.won || g.lost) {
       ctx.fillStyle = '#142546c9';
-      ctx.fillRect(20, 250, 320, 120);
-      ctx.fillStyle = 'white';
-      ctx.textAlign = 'center';
-      ctx.font = 'bold 32px sans-serif';
-      ctx.fillText(g.won ? 'できた！' : 'もう一度あそぼう', 180, 322);
+      if (landscape) {
+        ctx.fillRect(0, 115, VW, 105);
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 32px sans-serif';
+        ctx.fillText(g.won ? 'できた！' : 'もう一度あそぼう', VW / 2, 178);
+      } else {
+        ctx.fillRect(20, 250, 320, 120);
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 32px sans-serif';
+        ctx.fillText(g.won ? 'できた！' : 'もう一度あそぼう', 180, 322);
+      }
     }
     frame = requestAnimationFrame(draw);
   }

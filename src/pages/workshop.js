@@ -405,7 +405,7 @@ function uploadModalHtml(genre) {
 
         <div id="ws-upload-done" hidden>
           <p class="ws-upload-done-title">🎉 公開できたよ！</p>
-          <p class="ws-upload-done-sub">このQRで作品ページを開けるよ。スマホのたて画面で遊んでね。</p>
+          <p class="ws-upload-done-sub">このQRで作品ページを開けるよ。スマホで遊んでね（パズルはたて、ほかは横向きがおすすめ）。</p>
           <img class="ws-upload-qr" id="ws-upload-qr" alt="プレイ用QRコード" width="220" height="220" />
           <p class="ws-upload-link-wrap">
             <a class="ws-upload-link" id="ws-upload-link" href="#" target="_blank" rel="noopener">プレイページをひらく</a>

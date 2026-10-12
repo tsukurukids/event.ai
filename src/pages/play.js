@@ -18,10 +18,15 @@ export function renderPlay(container, params) {
       if (disposed) return;
       if (error) throw error;
       if (!game || isExpired(game.expires_at)) { unavailable(); return; }
+      const portrait = game.genre_id === 'puzzle';
+      const stageClass = portrait ? 'gallery-play-stage--portrait' : 'gallery-play-stage--landscape';
+      const playHint = portrait
+        ? 'スマホのたて画面向けのゲームです。画面のボタンをタップして遊ぼう。'
+        : 'スマホの横画面向けのゲームです。端末を横向きにして、画面のボタンをタップして遊ぼう。';
       panel.innerHTML = `<header class="gallery-play-header"><h1>${escape(game.title)}</h1><button class="gallery-button" id="fullscreen-btn">大きな画面であそぶ</button></header>
         <div class="gallery-save"><div><strong>${game.expires_at ? `${escape(formatExpiresDate(game.expires_at))}（日本時間）まで公開` : '公開中の作品'}</strong><p>作品フォルダを保存すると、公開終了後も手元に残せます。</p></div><button class="gallery-button gallery-button-primary" id="download-game-zip">作品をダウンロード（ZIP）</button></div>
-        <p class="gallery-download-status" role="status"></p><p class="gallery-play-hint">スマホのたて画面向けのゲームです。画面のボタンをタップして遊ぼう。</p>
-        <div class="gallery-play-phone"><iframe id="game-frame" class="play-frame" sandbox="allow-scripts allow-modals" title="${escape(game.title)}"></iframe></div>`;
+        <p class="gallery-download-status" role="status"></p><p class="gallery-play-hint">${playHint}</p>
+        <div class="gallery-play-stage ${stageClass}"><iframe id="game-frame" class="play-frame" sandbox="allow-scripts allow-modals" title="${escape(game.title)}"></iframe></div>`;
       const frame=panel.querySelector('#game-frame'), status=panel.querySelector('[role="status"]'), button=panel.querySelector('#download-game-zip');
       const checkPeriod = () => { if (isExpired(game.expires_at)) { clearInterval(timer); unavailable(); return false; } return true; };
       if (game.expires_at) timer=setInterval(checkPeriod,1000);
