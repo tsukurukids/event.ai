@@ -73,9 +73,9 @@ function starterIndexHtml(folderName, genre) {
     Antigravity でこのフォルダを開いて、<br>
     AIと一緒に <strong>${safeLabel}</strong> ゲームを作ろう！</p>
     <p style="margin-top:0.75rem;">${
-      genre.id === 'puzzle'
-        ? 'スマホのたて画面（360×640）で遊ぶゲームにしよう。'
-        : 'スマホの横画面（640×360）で遊ぶゲームにしよう。'
+      genre.id === 'athletic'
+        ? 'スマホの横画面（640×360）で遊ぶゲームにしよう。'
+        : 'スマホのたて画面（360×640）で遊ぶゲームにしよう。'
     }</p>
     <p style="margin-top:1rem;font-size:0.9rem;">画像は <code>assets/</code> に入っています。</p>
   </div>
@@ -129,9 +129,9 @@ export async function downloadNamedStarterZip({ participantName, genre }) {
       '',
       'このフォルダの画像をゲームで使います。',
       'プロンプトに書いてあるパス（例: ./assets/ship_blue.png）をそのままでOK。',
-      genre.id === 'puzzle'
-        ? 'ゲームはスマホのたて画面（canvas 360×640）で遊ぶ想定です。'
-        : 'ゲームはスマホの横画面（canvas 640×360）で遊ぶ想定です。',
+      genre.id === 'athletic'
+        ? 'ゲームはスマホの横画面（canvas 640×360）で遊ぶ想定です。'
+        : 'ゲームはスマホのたて画面（canvas 360×640）で遊ぶ想定です。',
       '',
       '入っているファイル:',
       ...files.map((f) => `- ${f}`),

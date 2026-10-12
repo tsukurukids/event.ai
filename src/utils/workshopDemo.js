@@ -2,7 +2,7 @@ import { workshopAssetUrl } from '../config/workshopAssets.js';
 
 const sizes = {
   athletic: { w: 720, h: 360 },
-  shooting: { w: 720, h: 360 },
+  shooting: { w: 360, h: 640 },
   puzzle: { w: 360, h: 640 },
 };
 
@@ -15,7 +15,7 @@ const configs = {
 export function openWorkshopDemo(genre, trigger) {
   const config = configs[genre.id];
   const { w: VW, h: VH } = sizes[genre.id] || sizes.athletic;
-  const landscape = genre.id !== 'puzzle';
+  const landscape = genre.id === 'athletic';
   const actionLabel = genre.id === 'athletic' ? 'ジャンプ' : genre.id === 'shooting' ? '発射' : '落とす';
   const dialog = document.createElement('dialog');
   dialog.className = `ws-demo ${landscape ? 'ws-demo--landscape' : 'ws-demo--portrait'}`;
@@ -70,16 +70,24 @@ export function openWorkshopDemo(genre, trigger) {
       };
       game.board[7][1] = 0; game.board[7][2] = 0;
       game.board[7][4] = 1; game.board[7][5] = 1;
+    } else if (genre.id === 'shooting') {
+      game = {
+        x: 154, y: 520, vy: 0, grounded: true, time: 0, cooldown: 0, score: 0, won: false, lost: false,
+        bullets: [],
+        coins: [],
+        enemies: Array.from({ length: 6 }, (_, i) => ({
+          x: 40 + (i % 3) * 100,
+          y: 70 + Math.floor(i / 3) * 90,
+          alive: true,
+        })),
+        col: 0, color: 0, board: [],
+      };
     } else {
       game = {
         x: 45, y: 260, vy: 0, grounded: true, time: 0, cooldown: 0, score: 0, won: false, lost: false,
         bullets: [],
         coins: [170, 340, 500],
-        enemies: Array.from({ length: 6 }, (_, i) => ({
-          x: 100 + i * 95,
-          y: 50 + (i % 2) * 42,
-          alive: true,
-        })),
+        enemies: [],
         col: 0, color: 0, board: [],
       };
     }
@@ -97,7 +105,7 @@ export function openWorkshopDemo(genre, trigger) {
   function action(key) {
     if (!ready || game.won || game.lost) return;
     if (genre.id === 'shooting' && key === 'Space' && game.cooldown <= 0) {
-      game.bullets.push({ x: game.x + 25, y: 290 });
+      game.bullets.push({ x: game.x + 24, y: 510 });
       game.cooldown = 0.2;
     }
     if (genre.id === 'puzzle') {
@@ -174,8 +182,11 @@ export function openWorkshopDemo(genre, trigger) {
     button.addEventListener('click', (e) => {
       if (e.detail === 0 && ready && !game.won && !game.lost) {
         action(button.dataset.key);
-        if (genre.id !== 'puzzle' && button.dataset.key === 'ArrowLeft') game.x = Math.max(0, game.x - 35);
-        if (genre.id !== 'puzzle' && button.dataset.key === 'ArrowRight') game.x = Math.min(660, game.x + 35);
+        if (genre.id !== 'puzzle' && button.dataset.key === 'ArrowLeft') game.x = Math.max(0, game.x - 28);
+        if (genre.id !== 'puzzle' && button.dataset.key === 'ArrowRight') {
+          const maxX = genre.id === 'shooting' ? 300 : 660;
+          game.x = Math.min(maxX, game.x + 28);
+        }
       }
     });
   });
@@ -225,7 +236,8 @@ export function openWorkshopDemo(genre, trigger) {
       g.time += dt;
       g.cooldown -= dt;
       if (genre.id !== 'puzzle') {
-        g.x = Math.max(0, Math.min(660, g.x + ((keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0)) * 280 * dt));
+        const maxX = genre.id === 'shooting' ? 300 : 660;
+        g.x = Math.max(0, Math.min(maxX, g.x + ((keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0)) * 280 * dt));
       }
       if (genre.id === 'athletic') {
         const oldY = g.y;
@@ -250,13 +262,14 @@ export function openWorkshopDemo(genre, trigger) {
       }
       if (genre.id === 'shooting') {
         if (keys.has('Space') && g.cooldown <= 0) {
-          g.bullets.push({ x: g.x + 25, y: 290 });
+          g.bullets.push({ x: g.x + 24, y: 510 });
           g.cooldown = 0.2;
         }
         for (const b of g.bullets) {
-          b.y -= 460 * dt;
+          b.y -= 480 * dt;
           for (const e of g.enemies) {
-            if (e.alive && Math.abs(b.x - (e.x + Math.sin(g.time * 1.5) * 35 + 25)) < 25 && Math.abs(b.y - (e.y + 25)) < 28) {
+            const ex = e.x + Math.sin(g.time * 1.5) * 18;
+            if (e.alive && Math.abs(b.x - (ex + 24)) < 24 && Math.abs(b.y - (e.y + 24)) < 28) {
               e.alive = false;
               b.y = -100;
               g.score++;
@@ -278,9 +291,9 @@ export function openWorkshopDemo(genre, trigger) {
       sprite(0, g.x, g.y, 50);
     } else if (genre.id === 'shooting') {
       ctx.fillStyle = '#d5ecff';
-      for (let i = 0; i < 40; i++) ctx.fillRect((i * 137) % VW, (i * 73) % VH, 2, 2);
-      g.enemies.filter((e) => e.alive).forEach((e, i) => sprite(1 + (i % 2), e.x + Math.sin(g.time * 1.5) * 35, e.y, 50));
-      sprite(0, g.x, 285, 55);
+      for (let i = 0; i < 50; i++) ctx.fillRect((i * 97) % VW, (i * 73) % VH, 2, 2);
+      g.enemies.filter((e) => e.alive).forEach((e, i) => sprite(1 + (i % 2), e.x + Math.sin(g.time * 1.5) * 18, e.y, 48));
+      sprite(0, g.x, 520, 52);
       ctx.fillStyle = '#ffe46f';
       g.bullets.forEach((b) => ctx.fillRect(b.x - 3, b.y, 6, 16));
     } else {

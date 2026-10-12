@@ -6,7 +6,7 @@
 const COMMON_RULES =
   'ルール：既存の index.html だけを編集（新しいHTMLは作らない） ／ 画像生成はしない ／ HTML・CSS・JSだけで作る ／ スマホでタッチ操作して遊ぶ ／ わからなければスタッフへ';
 
-/** アスレチック・シューティング：スマホ横画面 */
+/** アスレチック：スマホ横画面 */
 const LANDSCAPE_CANVAS = [
   '重要：スマホの横画面で指だけで遊ぶゲームにして（PCでも同じ横長のまま表示）',
   '・canvasサイズは必ず横640・縦360にして、画面の中央にできるだけ大きく表示して',
@@ -19,7 +19,7 @@ const LANDSCAPE_CANVAS = [
 const LANDSCAPE_KEEP =
   '守ること：canvasは横640・縦360のまま。画面下のタッチボタンは消さない・小さくしない。たて長画面やキー操作だけのゲームに変えない。';
 
-/** パズル：スマホたて画面 */
+/** シューティング・パズル：スマホたて画面 */
 const PORTRAIT_CANVAS = [
   '重要：スマホのたて画面で指だけで遊ぶゲームにして（PCでも同じたて長のまま表示）',
   '・canvasサイズは必ず横360・縦640にして、画面の中央にできるだけ大きく表示して',
@@ -122,7 +122,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       rules: COMMON_RULES,
       prompt: [
         EDIT_INDEX,
-        LANDSCAPE_CANVAS,
+        PORTRAIT_CANVAS,
         '・画面の背景は黒い宇宙にして星をたくさん散らばらせて',
         '・画像はPromise.allですべて読み込んでからゲームループを開始して',
         '読み込む画像：',
@@ -134,7 +134,7 @@ export const WORKSHOP_MANUAL_STEPS = {
         '・「発射」を押すと宇宙船から弾がまっすぐ上に飛んでいくようにして',
       ].join('\n'),
       checklist: [
-        '横長のスマホ画面になっている',
+        'たて長のスマホ画面になっている',
         '宇宙船が画面の下に表示されている',
         '←→ボタンで宇宙船が動く',
         '発射ボタンで弾が上に飛んでいく',
@@ -142,7 +142,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       tips: [
         'Promise.allで画像を全部読み込んでからゲームを始めるのが大切！',
         '既存の index.html を書き換えると、次のステップへ内容が引き継がれるよ',
-        'まず「横長＋下のタッチボタン」ができてから、見た目を増やそう',
+        'まず「たて長＋下のタッチボタン」ができてから、見た目を増やそう',
       ],
     },
     {
@@ -152,26 +152,26 @@ export const WORKSHOP_MANUAL_STEPS = {
       rules: COMMON_RULES,
       prompt: [
         CONTINUE_INDEX,
-        LANDSCAPE_KEEP,
+        PORTRAIT_KEEP,
         '・画像はPromise.allですべて読み込んでからゲームループを開始して',
         '追加で読み込む画像：',
         '・./assets/enemy_green.png',
         'タイムスタンプをつけて読み込む',
-        '・画面の上に敵を3行×5列で15体並べて canvasのdrawImage()で表示して（横長画面に収まる大きさ）',
+        '・画面の上に敵を3行×4列で12体並べて canvasのdrawImage()で表示して（たて長画面に収まる大きさ）',
         '・敵はゆっくり左右に動いて端まで来たら少し下がって反対に進むようにして',
         '・自分の弾が敵に当たったらその敵が消えるようにして',
         '・敵もランダムに弾を下に向けて撃ってくるようにして',
         '・下の「←」「→」「発射」ボタンはそのまま使って遊べるようにして',
       ].join('\n'),
       checklist: [
-        '敵が15体ならんで表示されている',
+        '敵が12体ならんで表示されている',
         '敵が左右に動いている',
         '弾が当たったら敵が消える',
         '敵も弾を撃ってくる',
         'タッチボタンでまだ操作できる',
       ],
       tips: [
-        '敵の数は「3行×5列で15体」のように数字ではっきり伝えるとよいよ',
+        '敵の数は「3行×4列で12体」のように数字ではっきり伝えるとよいよ',
         '敵を足しても、下のタッチボタンは消さないでね',
       ],
     },
@@ -182,7 +182,7 @@ export const WORKSHOP_MANUAL_STEPS = {
       rules: COMMON_RULES,
       prompt: [
         CONTINUE_INDEX,
-        LANDSCAPE_KEEP,
+        PORTRAIT_KEEP,
         '・敵を1体倒すたびにスコアが10点上がるようにして画面の上にスコアを表示して',
         '・自分の宇宙船はライフが3つあって敵の弾に当たるたびに1つ減るようにして',
         '・ライフを画面の上にハートマークで3つ表示して',
@@ -207,12 +207,12 @@ export const WORKSHOP_MANUAL_STEPS = {
       shortTitle: '自由にかえる',
       title: 'じぶんだけのゲームにしよう',
       rules: COMMON_RULES,
-      prompt: `${CONTINUE_INDEX}\n${LANDSCAPE_KEEP}\n・`,
+      prompt: `${CONTINUE_INDEX}\n${PORTRAIT_KEEP}\n・`,
       checklist: [
         '見た目かルールを1つ以上アレンジした',
-        '横長とタッチボタンは残っている',
+        'たて長とタッチボタンは残っている',
       ],
-      ...FREE_HINTS_LANDSCAPE,
+      ...FREE_HINTS_PORTRAIT,
       hintGroups: [
         {
           label: '見た目を変える',
@@ -246,7 +246,7 @@ export const WORKSHOP_MANUAL_STEPS = {
           label: '例：見た目チェンジ',
           text: [
             CONTINUE_INDEX,
-            LANDSCAPE_KEEP,
+            PORTRAIT_KEEP,
             '・宇宙船を ./assets/ship_pink.png にかえて',
             '・敵を ./assets/enemy_orange.png にかえて',
             '・背景の星をもっとたくさん増やして',
@@ -256,7 +256,7 @@ export const WORKSHOP_MANUAL_STEPS = {
           label: '例：ボス出現',
           text: [
             CONTINUE_INDEX,
-            LANDSCAPE_KEEP,
+            PORTRAIT_KEEP,
             '・敵を全部倒したら大きなボスキャラを出して',
             '・ボスのライフは5にして',
             '・ボスを倒したら「クリア！」と大きく表示して',
@@ -266,7 +266,7 @@ export const WORKSHOP_MANUAL_STEPS = {
           label: '例：2連射',
           text: [
             CONTINUE_INDEX,
-            LANDSCAPE_KEEP,
+            PORTRAIT_KEEP,
             '・発射ボタンで弾を一度に2発撃てるようにして',
             '・弾を撃つときに短い音をつけて',
             '・敵を倒したときにキラキラエフェクトをつけて',
@@ -276,7 +276,7 @@ export const WORKSHOP_MANUAL_STEPS = {
     },
     {
       id: 'step5',
-      ...FINISH_HINTS_LANDSCAPE,
+      ...FINISH_HINTS_PORTRAIT,
       rules: COMMON_RULES,
     },
   ],

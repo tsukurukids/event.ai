@@ -18,7 +18,7 @@ export function renderPlay(container, params) {
       if (disposed) return;
       if (error) throw error;
       if (!game || isExpired(game.expires_at)) { unavailable(); return; }
-      const portrait = game.genre_id === 'puzzle';
+      const portrait = game.genre_id === 'puzzle' || game.genre_id === 'shooting';
       const stageClass = portrait ? 'gallery-play-stage--portrait' : 'gallery-play-stage--landscape';
       const playHint = portrait
         ? 'スマホのたて画面向けのゲームです。画面のボタンをタップして遊ぼう。'
